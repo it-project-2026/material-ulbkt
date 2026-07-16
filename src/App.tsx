@@ -68,7 +68,7 @@ export default function App() {
   // Google Sheets authentication state
   const [user, setUser] = useState<any>(null);
   const [token, setToken] = useState<string | null>(null);
-  const [isSheetsLoading, setIsSheetsLoading] = useState(false);
+  const [isSheetsLoading, setIsSheetsLoading] = useState(true);
   const [sheetsError, setSheetsError] = useState<string | null>(null);
   const [sheetsSuccessMessage, setSheetsSuccessMessage] = useState<string | null>(null);
 
@@ -117,6 +117,7 @@ export default function App() {
   useEffect(() => {
     const initializeData = async () => {
       let gasActive = false;
+      setIsSheetsLoading(true);
       try {
         const res = await fetch('/api/gas-config');
         if (res.ok) {
@@ -131,22 +132,23 @@ export default function App() {
         }
       } catch (err) {
         console.error('Gagal memeriksa konfigurasi GAS backend:', err);
-      }
-
-      // Fallback: If GAS is not active, load offline data from localStorage or mock data
-      if (!gasActive) {
-        const localData = localStorage.getItem('material_logs');
-        if (localData) {
-          try {
-            setRecords(JSON.parse(localData));
-          } catch (err) {
-            console.error('Error parsing material records from localStorage:', err);
+      } finally {
+        // Fallback: If GAS is not active, load offline data from localStorage or mock data
+        if (!gasActive) {
+          const localData = localStorage.getItem('material_logs');
+          if (localData) {
+            try {
+              setRecords(JSON.parse(localData));
+            } catch (err) {
+              console.error('Error parsing material records from localStorage:', err);
+              setRecords(INITIAL_MOCK_RECORDS);
+              localStorage.setItem('material_logs', JSON.stringify(INITIAL_MOCK_RECORDS));
+            }
+          } else {
             setRecords(INITIAL_MOCK_RECORDS);
             localStorage.setItem('material_logs', JSON.stringify(INITIAL_MOCK_RECORDS));
           }
-        } else {
-          setRecords(INITIAL_MOCK_RECORDS);
-          localStorage.setItem('material_logs', JSON.stringify(INITIAL_MOCK_RECORDS));
+          setIsSheetsLoading(false);
         }
       }
     };
@@ -674,11 +676,14 @@ export default function App() {
                 
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className={`inline-block w-2.5 h-2.5 rounded-full ${gasUrl || token ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'}`}></span>
+                    <span className={`inline-block w-2.5 h-2.5 rounded-full ${gasUrl || token ? 'bg-emerald-500 animate-pulse' : (isSheetsLoading ? 'bg-blue-500 animate-pulse' : 'bg-slate-400')}`}></span>
                     <h4 className="text-sm font-bold text-slate-800">
-                      {gasUrl || token ? 'Online' : 'Offline'}
+                      {gasUrl ? 'Koneksi Otomatis Aktif (Google Apps Script)' : (token ? 'Koneksi Google Sheets Aktif' : (isSheetsLoading ? 'Menghubungkan ke Database...' : 'Mode Offline'))}
                     </h4>
                   </div>
+                  <p className="text-[11px] text-slate-500 mt-0.5 truncate">
+                    {gasUrl ? 'Sinkronisasi dua arah real-time dengan Spreadsheet Cloud PLN aktif.' : (token ? 'Terhubung dengan akun Google Sheets Anda.' : (isSheetsLoading ? 'Menyelaraskan data dan opsi referensi...' : 'Menggunakan penyimpanan lokal browser.'))}
+                  </p>
                 </div>
               </div>
 
