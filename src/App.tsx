@@ -119,76 +119,96 @@ export default function App() {
     }
   };
 
-  // Load initial data on mount
-  useEffect(() => {
-    const initializeData = async () => {
-      let gasActive = false;
-      setIsSheetsLoading(true);
-      setSyncStatus('loading');
-      
-      try {
-        setSyncStep('Memeriksa status server backend PLN...');
-        setSyncPercent(15);
-        await new Promise(r => setTimeout(r, 400)); // Smooth entry transition
+  // Synchronize with database on start / retry
+  const syncDatabaseCloud = async () => {
+    setIsSheetsLoading(true);
+    setSyncStatus('loading');
+    setSheetsError(null);
+    
+    try {
+      setSyncStep('Memeriksa status server backend PLN...');
+      setSyncPercent(15);
+      await new Promise(r => setTimeout(r, 450)); // Smooth entry transition
 
+      let gasActive = false;
+      let gasUrlToUse = '';
+      let backendActive = false;
+
+      try {
         const res = await fetch('/api/gas-config');
         if (res.ok) {
-          setSyncStep('Mengunduh konfigurasi Google Apps Script...');
-          setSyncPercent(35);
-          await new Promise(r => setTimeout(r, 300));
-
           const config = await res.json();
           if (config.configured) {
+            backendActive = true;
             gasActive = true;
             setIsBackendGas(true);
-            setGasUrlState('/api/gas');
-            
-            setSyncStep('Menghubungkan ke Google Sheets Cloud PLN...');
-            setSyncPercent(55);
-            await new Promise(r => setTimeout(r, 300));
-            
-            setSyncStep('Menyinkronkan data riwayat & opsi referensi petugas...');
-            setSyncPercent(75);
-            
-            // Directly load data from GAS - bypasses localStorage as primary source
-            const activeMaterialsList = sheetsOptions?.materials || MATERIAL_LIST;
-            const { records: gasRecords, options: gasOpts } = await fetchDataFromGas('/api/gas', activeMaterialsList);
-            setSheetsOptions(gasOpts);
-            
-            const reindexed = gasRecords.map((rec, index) => ({
-              ...rec,
-              no: index + 1
-            }));
-            
-            setSyncStep('Menyimpan data sinkronisasi ke penyimpanan aman...');
-            setSyncPercent(95);
-            setRecords(reindexed);
-            localStorage.setItem('material_logs', JSON.stringify(reindexed));
-            await new Promise(r => setTimeout(r, 300));
-            
-            setSyncStep('Selesai! Membuka portal utama...');
-            setSyncPercent(100);
-            setSyncStatus('success');
-            await new Promise(r => setTimeout(r, 500));
-            setIsInitialSyncing(false);
-          } else {
-            throw new Error('Konfigurasi database Cloud (GAS_URL) belum terpasang di server.');
+            gasUrlToUse = '/api/gas';
           }
-        } else {
-          throw new Error('Gagal berkomunikasi dengan server backend PLN.');
         }
-      } catch (err: any) {
-        console.error('Gagal memeriksa konfigurasi GAS backend:', err);
-        setSheetsError(err.message || 'Gagal menyelaraskan koneksi database cloud.');
-        setSyncStatus('error');
-        
-        // If error, let the user select Retry or Offline Mode, so they aren't blocked.
-      } finally {
-        setIsSheetsLoading(false);
+      } catch (err) {
+        console.warn('Backend proxy tidak terdeteksi atau bermasalah. Mencoba koneksi langsung...', err);
       }
-    };
 
-    initializeData();
+      // Fallback: If backend proxy is not active/fails, try using direct client-side SPREADSHEET_WEB_APP_URL
+      if (!backendActive) {
+        if (SPREADSHEET_WEB_APP_URL && SPREADSHEET_WEB_APP_URL.startsWith('https://script.google.com')) {
+          gasActive = true;
+          setIsBackendGas(false);
+          gasUrlToUse = SPREADSHEET_WEB_APP_URL;
+          console.log('Berhasil beralih ke koneksi langsung ke Google Apps Script:', SPREADSHEET_WEB_APP_URL);
+        }
+      }
+
+      if (gasActive && gasUrlToUse) {
+        setSyncStep('Mengunduh konfigurasi Google Apps Script...');
+        setSyncPercent(35);
+        await new Promise(r => setTimeout(r, 300));
+
+        setGasUrlState(gasUrlToUse);
+        
+        setSyncStep('Menghubungkan ke Google Sheets Cloud PLN...');
+        setSyncPercent(55);
+        await new Promise(r => setTimeout(r, 300));
+        
+        setSyncStep('Menyinkronkan data riwayat & opsi referensi petugas...');
+        setSyncPercent(75);
+        
+        // Directly load data from GAS
+        const activeMaterialsList = sheetsOptions?.materials || MATERIAL_LIST;
+        const { records: gasRecords, options: gasOpts } = await fetchDataFromGas(gasUrlToUse, activeMaterialsList);
+        setSheetsOptions(gasOpts);
+        
+        const reindexed = gasRecords.map((rec, index) => ({
+          ...rec,
+          no: index + 1
+        }));
+        
+        setSyncStep('Menyimpan data sinkronisasi ke penyimpanan aman...');
+        setSyncPercent(95);
+        setRecords(reindexed);
+        localStorage.setItem('material_logs', JSON.stringify(reindexed));
+        await new Promise(r => setTimeout(r, 300));
+        
+        setSyncStep('Selesai! Membuka portal utama...');
+        setSyncPercent(100);
+        setSyncStatus('success');
+        await new Promise(r => setTimeout(r, 500));
+        setIsInitialSyncing(false);
+      } else {
+        throw new Error('Google Apps Script Web App URL (GAS_URL) tidak terkonfigurasi. Sila tambahkan ke .env atau src/utils/constants.ts.');
+      }
+    } catch (err: any) {
+      console.error('Gagal menyelaraskan koneksi database cloud:', err);
+      setSheetsError(err.message || 'Gagal menyelaraskan koneksi database cloud.');
+      setSyncStatus('error');
+    } finally {
+      setIsSheetsLoading(false);
+    }
+  };
+
+  // Load initial data on mount
+  useEffect(() => {
+    syncDatabaseCloud();
   }, []);
 
   // Google Auth Listener
@@ -555,62 +575,7 @@ export default function App() {
               <div className="flex items-center gap-2 pt-1">
                 <button
                   onClick={() => {
-                    setSheetsError(null);
-                    setSyncStatus('loading');
-                    // Retry initialization
-                    const retryInit = async () => {
-                      try {
-                        setIsSheetsLoading(true);
-                        setSyncStep('Memeriksa status server backend PLN...');
-                        setSyncPercent(15);
-                        await new Promise(r => setTimeout(r, 400));
-                        
-                        const res = await fetch('/api/gas-config');
-                        if (res.ok) {
-                          setSyncStep('Mengunduh konfigurasi Google Apps Script...');
-                          setSyncPercent(35);
-                          await new Promise(r => setTimeout(r, 300));
-
-                          const config = await res.json();
-                          if (config.configured) {
-                            setSyncStep('Menghubungkan ke Google Sheets Cloud PLN...');
-                            setSyncPercent(60);
-                            await new Promise(r => setTimeout(r, 300));
-
-                            setSyncStep('Menyinkronkan data riwayat & opsi referensi petugas...');
-                            setSyncPercent(85);
-
-                            const activeMaterialsList = sheetsOptions?.materials || MATERIAL_LIST;
-                            const { records: gasRecords, options: gasOpts } = await fetchDataFromGas('/api/gas', activeMaterialsList);
-                            setSheetsOptions(gasOpts);
-                            
-                            const reindexed = gasRecords.map((rec, index) => ({
-                              ...rec,
-                              no: index + 1
-                            }));
-                            
-                            setRecords(reindexed);
-                            localStorage.setItem('material_logs', JSON.stringify(reindexed));
-                            
-                            setSyncPercent(100);
-                            setSyncStep('Selesai! Membuka portal...');
-                            setSyncStatus('success');
-                            await new Promise(r => setTimeout(r, 600));
-                            setIsInitialSyncing(false);
-                          } else {
-                            throw new Error('Database Cloud (GAS_URL) belum terkonfigurasi pada server backend.');
-                          }
-                        } else {
-                          throw new Error('Gagal memeriksa status server backend.');
-                        }
-                      } catch (err: any) {
-                        setSheetsError(err.message || 'Gagal menyelaraskan koneksi database.');
-                        setSyncStatus('error');
-                      } finally {
-                        setIsSheetsLoading(false);
-                      }
-                    };
-                    retryInit();
+                    syncDatabaseCloud();
                   }}
                   className="flex-1 bg-slate-700 hover:bg-slate-600 text-white font-bold py-2 px-3 rounded-xl text-xs transition-colors cursor-pointer"
                 >
