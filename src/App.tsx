@@ -124,9 +124,9 @@ export default function App() {
           if (config.configured) {
             gasActive = true;
             setIsBackendGas(true);
-            setGasUrlState(SPREADSHEET_WEB_APP_URL);
+            setGasUrlState('/api/gas');
             // Directly load data from GAS - bypasses localStorage as primary source
-            await handleLoadGasData(SPREADSHEET_WEB_APP_URL);
+            await handleLoadGasData('/api/gas');
           }
         }
       } catch (err) {
