@@ -414,7 +414,7 @@ export async function saveRecordsToGas(
     records: [headers, ...rows]
   };
 
-  const url = `${gasUrl}${gasUrl.includes('?') ? '&' : '?'}action=writeRecords`;
+  const url = gasUrl;
   const res = await fetch(url, {
     method: 'POST',
     mode: 'cors',

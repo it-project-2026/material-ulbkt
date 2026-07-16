@@ -1,9 +1,9 @@
 import React, { useRef, useState } from 'react';
 import { MaterialRecord, MATERIAL_LIST, MaterialItem } from '../types';
-import { Download, Printer, X, FileText, Check, Loader2, Eraser } from 'lucide-react';
+import { Download, Printer, X, FileText, Check, Loader2 } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
-import SignatureCanvas from 'react-signature-canvas';
+import { SignatureModal } from './SignatureModal';
 
 interface ReportPdfModalProps {
   record: MaterialRecord;
@@ -17,8 +17,9 @@ export default function ReportPdfModal({ record, onClose, materialsList }: Repor
   const [isDownloading, setIsDownloading] = useState(false);
   const [downloadSuccess, setDownloadSuccess] = useState(false);
   
-  const sigCanvasSerah = useRef<SignatureCanvas>(null);
-  const sigCanvasTerima = useRef<SignatureCanvas>(null);
+  const [sigDataSerah, setSigDataSerah] = useState<string | null>(null);
+  const [sigDataTerima, setSigDataTerima] = useState<string | null>(null);
+  const [popupState, setPopupState] = useState<'serah' | 'terima' | null>(null);
 
   // Helper to format date Indonesian style
   const formatDateIndo = (timestampStr: string) => {
@@ -50,43 +51,31 @@ export default function ReportPdfModal({ record, onClose, materialsList }: Repor
     setIsDownloading(true);
 
     try {
-      // Capture with high quality
       const element = reportRef.current;
       const canvas = await html2canvas(element, {
-        scale: 2, // High DPI scaling
+        scale: 2,
         useCORS: true,
-        logging: false,
         backgroundColor: '#ffffff',
-        windowWidth: 794, // Standard A4 width pixel equivalent at 72dpi is ~794px, 96dpi is ~794px
       });
 
       const imgData = canvas.toDataURL('image/png');
       
-      // A4 page dimensions: 210mm x 297mm
       const pdf = new jsPDF({
         orientation: 'portrait',
         unit: 'mm',
         format: 'a4'
       });
 
-      const imgWidth = 210;
-      const pageHeight = 297;
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      const imgProps = pdf.getImageProperties(imgData);
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
       
-      // Add margin if desired, or fit exactly to A4
-      pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight, undefined, 'FAST');
+      const margin = 15;
+      const contentWidth = pdfWidth - (2 * margin);
+      const contentHeight = (imgProps.height * contentWidth) / imgProps.width;
       
-      let heightLeft = imgHeight - pageHeight;
-      let position = -pageHeight;
-
-      // Handle multi-page if any
-      while (heightLeft >= 0) {
-        pdf.addPage();
-        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight, undefined, 'FAST');
-        heightLeft -= pageHeight;
-        position -= pageHeight;
-      }
-
+      pdf.addImage(imgData, 'PNG', margin, margin, contentWidth, contentHeight);
+      
       const filename = `LAPORAN_MATERIAL_YANTEK_${record.posko.replace(/\s+/g, '_')}_${record.ulp.replace(/\s+/g, '_')}_${record.timestamp.split(' ')[0]}.pdf`;
       pdf.save(filename);
       
@@ -292,41 +281,41 @@ export default function ReportPdfModal({ record, onClose, materialsList }: Repor
           <div className="bg-white text-black p-8 sm:p-12 w-full max-w-[794px] border border-slate-200 shadow-lg font-mono select-text relative" style={{ minWidth: '700px' }}>
             
             {/* The actual HTML/CSS structure to capture or print */}
-            <div id="printable-report-area" ref={reportRef} className="bg-white text-black w-full text-xs">
+            <div id="printable-report-area" ref={reportRef} style={{ backgroundColor: '#ffffff', color: '#000000', width: '100%', fontSize: '10px' }}>
               
               {/* Header Title */}
               <div className="text-center font-bold uppercase tracking-wide">
-                <div className="text-sm font-black underline" style={{ fontSize: '15px' }}>DAFTAR PEMAKAIAN MATERIAL MOBILE YANTEK</div>
-                <div className="text-xs mt-1" style={{ fontSize: '12px' }}>
+                <div style={{ fontSize: '12px' }} className="font-black underline">DAFTAR PEMAKAIAN MATERIAL MOBILE YANTEK</div>
+                <div className="text-[10px] mt-0.5">
                   {record.shift.toUpperCase()} {record.posko.toUpperCase()} {record.ulp.toUpperCase()}
                 </div>
-                <div className="text-xs font-normal mt-1 mb-4" style={{ fontSize: '11px' }}>
+                <div className="text-[9px] font-normal mt-0.5 mb-2">
                   {formatDateIndo(record.timestamp)}
                 </div>
               </div>
 
               {/* Handover Details */}
-              <div className="mb-4 space-y-1" style={{ fontSize: '11px' }}>
+              <div className="mb-2 space-y-0.5" style={{ fontSize: '9px' }}>
                 <div className="flex">
-                  <div className="w-[220px] font-bold">PETUGAS YANG MENYERAHKAN</div>
+                  <div className="w-[180px] font-bold">PETUGAS YANG MENYERAHKAN</div>
                   <div className="font-semibold">: {record.petugasSerah.toUpperCase()}</div>
                 </div>
                 <div className="flex">
-                  <div className="w-[220px] font-bold">PETUGAS YANG MENERIMA</div>
+                  <div className="w-[180px] font-bold">PETUGAS YANG MENERIMA</div>
                   <div className="font-semibold">: {record.petugasTerima.toUpperCase()}</div>
                 </div>
               </div>
 
               {/* Grid Table */}
-              <table className="w-full border-collapse border-[1.5px] border-black text-[10px]">
+              <table className="w-full border-collapse" style={{ borderWidth: '1px', borderColor: '#000000', fontSize: '9px' }}>
                 <thead>
-                  <tr className="bg-slate-100 border-b-[1.5px] border-black">
-                    <th className="border border-black text-center p-1.5 font-bold w-[35px]" style={{ fontSize: '10px' }}>NO</th>
-                    <th className="border border-black text-left p-1.5 font-bold" style={{ fontSize: '10px' }}>MATERIAL</th>
-                    <th className="border border-black text-center p-1.5 font-bold w-[120px]" style={{ fontSize: '10px' }}>MATERIAL TERPAKAI</th>
-                    <th className="border border-black text-center p-1.5 font-bold w-[65px]" style={{ fontSize: '10px' }}>SATUAN</th>
-                    <th className="border border-black text-left p-1.5 font-bold w-[190px]" style={{ fontSize: '10px' }}>LOKASI TERPASANG</th>
-                    <th className="border border-black text-left p-1.5 font-bold w-[100px]" style={{ fontSize: '10px' }}>KET</th>
+                  <tr style={{ backgroundColor: '#f3f4f6', borderBottomWidth: '1px', borderColor: '#000000' }}>
+                    <th style={{ borderWidth: '1px', borderColor: '#000000', textAlign: 'center', padding: '3px', fontWeight: 'bold', width: '25px' }}>NO</th>
+                    <th style={{ borderWidth: '1px', borderColor: '#000000', textAlign: 'left', padding: '3px', fontWeight: 'bold' }}>MATERIAL</th>
+                    <th style={{ borderWidth: '1px', borderColor: '#000000', textAlign: 'center', padding: '3px', fontWeight: 'bold', width: '80px' }}>MATERIAL TERPAKAI</th>
+                    <th style={{ borderWidth: '1px', borderColor: '#000000', textAlign: 'center', padding: '3px', fontWeight: 'bold', width: '50px' }}>SATUAN</th>
+                    <th style={{ borderWidth: '1px', borderColor: '#000000', textAlign: 'left', padding: '3px', fontWeight: 'bold', width: '150px' }}>LOKASI TERPASANG</th>
+                    <th style={{ borderWidth: '1px', borderColor: '#000000', textAlign: 'left', padding: '3px', fontWeight: 'bold', width: '80px' }}>KET</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -339,17 +328,17 @@ export default function ReportPdfModal({ record, onClose, materialsList }: Repor
                     const unit = isCable ? 'Mtr' : 'Bh';
 
                     return (
-                      <tr key={item.id} className="border-b border-black/80 hover:bg-slate-50">
-                        <td className="border border-black/80 text-center p-1 font-semibold">{index + 1}</td>
-                        <td className="border border-black/80 text-left px-2 py-1 font-medium text-[10px] uppercase">{item.name}</td>
-                        <td className="border border-black/80 text-center p-1 font-bold bg-slate-50/20 text-[11px]">
+                      <tr key={item.id} style={{ borderBottomWidth: '1px', borderColor: '#000000' }}>
+                        <td style={{ borderWidth: '1px', borderColor: '#000000', textAlign: 'center', padding: '2px', fontWeight: 'bold' }}>{index + 1}</td>
+                        <td style={{ borderWidth: '1px', borderColor: '#000000', textAlign: 'left', padding: '2px 4px', fontWeight: 'medium', fontSize: '9px', textTransform: 'uppercase' }}>{item.name}</td>
+                        <td style={{ borderWidth: '1px', borderColor: '#000000', textAlign: 'center', padding: '2px', fontWeight: 'bold', backgroundColor: '#f9fafb' }}>
                           {hasQty ? usage.qty : ''}
                         </td>
-                        <td className="border border-black/80 text-center p-1 text-slate-700">{unit}</td>
-                        <td className="border border-black/80 text-left px-2 py-1 font-normal text-[9.5px] truncate max-w-[190px]">
+                        <td style={{ borderWidth: '1px', borderColor: '#000000', textAlign: 'center', padding: '2px', color: '#374151' }}>{unit}</td>
+                        <td style={{ borderWidth: '1px', borderColor: '#000000', textAlign: 'left', padding: '2px 4px', fontSize: '8.5px' }}>
                           {hasQty ? usage.lokasi : ''}
                         </td>
-                        <td className="border border-black/80 text-left px-2 py-1 font-normal text-[9px]">
+                        <td style={{ borderWidth: '1px', borderColor: '#000000', textAlign: 'left', padding: '2px 4px', fontSize: '8px' }}>
                           {index === activeMaterials.length - 1 && record.keterangan ? record.keterangan : ''}
                         </td>
                       </tr>
@@ -359,49 +348,45 @@ export default function ReportPdfModal({ record, onClose, materialsList }: Repor
               </table>
 
               {/* Signatures and Keterangan Footer */}
-              <div className="mt-8 grid grid-cols-2 gap-8 text-center" style={{ fontSize: '11px' }}>
+              <div className="mt-4 grid grid-cols-2 gap-4 text-center" style={{ fontSize: '10px' }}>
                 <div>
                   <p className="font-bold">PETUGAS YANG MENYERAHKAN,</p>
-                  <div className="h-20 border border-slate-300 rounded mt-1 mb-2 bg-slate-50 relative">
-                    <SignatureCanvas 
-                      ref={sigCanvasSerah} 
-                      penColor='black' 
-                      canvasProps={{width: 300, height: 80, className: 'sigCanvas w-full h-full'}} 
-                    />
-                    <button 
-                      onClick={() => sigCanvasSerah.current?.clear()}
-                      className="absolute top-1 right-1 p-1 bg-white/80 rounded hover:bg-white"
-                      title="Hapus tanda tangan"
-                    >
-                      <Eraser className="h-3 w-3 text-slate-500" />
-                    </button>
+                  <div 
+                    className="h-16 rounded mt-1 mb-1 flex items-center justify-center cursor-pointer"
+                    style={{ borderWidth: '1px', borderColor: '#d1d5db', backgroundColor: '#f9fafb' }}
+                    onClick={() => setPopupState('serah')}
+                  >
+                    {sigDataSerah ? <img src={sigDataSerah} alt="Signature Serah" className="h-full object-contain" /> : <span style={{ color: '#9ca3af' }}>Klik untuk tanda tangan</span>}
                   </div>
                   <p className="font-bold underline">({record.petugasSerah.toUpperCase()})</p>
-                  <p className="text-[9px] text-slate-500 font-mono mt-0.5">Petugas Serah Shift</p>
+                  <p className="text-[8px] font-mono mt-0" style={{ color: '#6b7280' }}>Petugas Serah Shift</p>
                 </div>
                 <div>
                   <p className="font-bold">PETUGAS YANG MENERIMA,</p>
-                  <div className="h-20 border border-slate-300 rounded mt-1 mb-2 bg-slate-50 relative">
-                    <SignatureCanvas 
-                      ref={sigCanvasTerima} 
-                      penColor='black' 
-                      canvasProps={{width: 300, height: 80, className: 'sigCanvas w-full h-full'}} 
-                    />
-                    <button 
-                      onClick={() => sigCanvasTerima.current?.clear()}
-                      className="absolute top-1 right-1 p-1 bg-white/80 rounded hover:bg-white"
-                      title="Hapus tanda tangan"
-                    >
-                      <Eraser className="h-3 w-3 text-slate-500" />
-                    </button>
+                  <div 
+                    className="h-16 rounded mt-1 mb-1 flex items-center justify-center cursor-pointer"
+                    style={{ borderWidth: '1px', borderColor: '#d1d5db', backgroundColor: '#f9fafb' }}
+                    onClick={() => setPopupState('terima')}
+                  >
+                    {sigDataTerima ? <img src={sigDataTerima} alt="Signature Terima" className="h-full object-contain" /> : <span style={{ color: '#9ca3af' }}>Klik untuk tanda tangan</span>}
                   </div>
                   <p className="font-bold underline">({record.petugasTerima.toUpperCase()})</p>
-                  <p className="text-[9px] text-slate-500 font-mono mt-0.5">Petugas Terima Shift</p>
+                  <p className="text-[8px] font-mono mt-0" style={{ color: '#6b7280' }}>Petugas Terima Shift</p>
                 </div>
               </div>
 
+              <SignatureModal 
+                isOpen={!!popupState}
+                onClose={() => setPopupState(null)}
+                title={popupState === 'serah' ? 'Tanda Tangan Petugas Penyerah' : 'Tanda Tangan Petugas Penerima'}
+                onSave={(data) => {
+                  if (popupState === 'serah') setSigDataSerah(data);
+                  else setSigDataTerima(data);
+                }}
+              />
+
               {/* Document footer meta */}
-              <div className="mt-6 border-t border-dashed border-black/30 pt-2 flex justify-between text-[8px] text-slate-400 font-sans">
+              <div className="mt-4 pt-1 flex justify-between text-[7px]" style={{ borderTopWidth: '1px', borderTopStyle: 'dashed', borderColor: 'rgba(0,0,0,0.3)', color: '#9ca3af' }}>
                 <span>LOGIMAT v2.1 • Generated Real-Time</span>
                 <span>Ref ID: {record.id} • Timestamps: {record.timestamp}</span>
               </div>

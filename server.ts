@@ -100,15 +100,7 @@ async function startServer() {
     }
 
     try {
-      const urlObj = new URL(gasUrl);
-      // Copy all incoming search params to the target URL
-      Object.entries(req.query).forEach(([key, val]) => {
-        if (val !== undefined) {
-          urlObj.searchParams.set(key, String(val));
-        }
-      });
-
-      const response = await fetch(urlObj.toString(), {
+      const response = await fetch(gasUrl, {
         method: "POST",
         headers: {
           "Content-Type": "text/plain;charset=utf-8"
