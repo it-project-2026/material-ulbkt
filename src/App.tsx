@@ -73,7 +73,6 @@ export default function App() {
 
   // GAS States
   const [gasUrl, setGasUrlState] = useState<string>('');
-  const [showGasModal, setShowGasModal] = useState<boolean>(false);
   const [isBackendGas, setIsBackendGas] = useState<boolean>(false);
 
   // Fetch dynamic reference options and records from Google Apps Script (GAS)
@@ -656,35 +655,11 @@ export default function App() {
               
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <span className={`inline-block w-2.5 h-2.5 rounded-full ${gasUrl ? 'bg-blue-500 animate-pulse' : token ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'}`}></span>
+                  <span className={`inline-block w-2.5 h-2.5 rounded-full ${gasUrl || token ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'}`}></span>
                   <h4 className="text-sm font-bold text-slate-800">
-                    {gasUrl ? 'Koneksi Database GAS Aktif' : token ? 'Koneksi Google Sheets Aktif' : 'Penyimpanan Offline (Lokal)'}
+                    {gasUrl || token ? 'Online' : 'Offline'}
                   </h4>
                 </div>
-                {gasUrl ? (
-                  <p className="text-xs text-slate-500 mt-0.5 truncate max-w-lg">
-                    <span className="inline-flex items-center gap-1 text-emerald-600 font-semibold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100">
-                      ⚡ Google Apps Script Terintegrasi Server (Backend Proxy)
-                    </span>
-                  </p>
-                ) : token ? (
-                  <p className="text-xs text-slate-500 mt-0.5 flex flex-wrap items-center gap-x-1.5">
-                    Spreadsheet ID: 
-                    <a 
-                      href={`https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}`} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="text-blue-600 hover:underline font-mono inline-flex items-center gap-0.5"
-                    >
-                      {SPREADSHEET_ID.substring(0, 10)}...{SPREADSHEET_ID.substring(SPREADSHEET_ID.length - 6)}
-                      <ExternalLink className="h-3 w-3" />
-                    </a>
-                  </p>
-                ) : (
-                  <p className="text-xs text-slate-500 mt-0.5">
-                    Gunakan integrasi server backend dengan Google Apps Script untuk sinkronisasi otomatis instan.
-                  </p>
-                )}
               </div>
             </div>
 
@@ -720,13 +695,7 @@ export default function App() {
                 </>
               )}
 
-              <button
-                onClick={() => setShowGasModal(true)}
-                className="flex items-center gap-1.5 bg-blue-600 text-white hover:bg-blue-700 px-3.5 py-1.5 rounded-lg text-xs font-bold cursor-pointer transition-colors"
-              >
-                <Settings2 className="h-3.5 w-3.5" />
-                Instruksi Apps Script
-              </button>
+
 
               {token && !gasUrl && (
                 <button
@@ -971,260 +940,7 @@ export default function App() {
         </div>
       </footer>
 
-      {/* Google Apps Script (GAS) Setup Modal */}
-      {showGasModal && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 overflow-y-auto">
-          <div className="bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-hidden shadow-2xl flex flex-col animate-fade-in border border-slate-100">
-            {/* Header */}
-            <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50 shrink-0">
-              <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center">
-                  <Settings2 className="h-5 w-5" />
-                </div>
-                <div>
-                  <h3 className="text-base font-bold text-slate-800">Petunjuk Sinkronisasi Google Sheets (GAS)</h3>
-                  <p className="text-[11px] text-slate-500">Integrasi spreadsheet otomatis langsung via server backend.</p>
-                </div>
-              </div>
-              <button 
-                onClick={() => setShowGasModal(false)}
-                className="w-8 h-8 rounded-lg hover:bg-slate-200 text-slate-400 hover:text-slate-600 flex items-center justify-center transition-colors cursor-pointer"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-
-            {/* Content (Scrollable) */}
-            <div className="p-6 overflow-y-auto space-y-6 flex-1 text-xs text-slate-600">
-              {/* Status Banner */}
-              {isBackendGas ? (
-                <div className="bg-emerald-50 border border-emerald-100 p-5 rounded-2xl space-y-2 text-emerald-800">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                    <strong className="text-xs font-bold uppercase tracking-wider">Koneksi Backend Aktif</strong>
-                  </div>
-                  <p className="text-xs leading-relaxed font-medium">
-                    Google Apps Script (GAS) telah dikonfigurasi secara aman di server backend (`GAS_URL`). Data akan otomatis disinkronkan langsung dari browser ke spreadsheet Anda melalui rute proxy backend yang aman.
-                  </p>
-                  <div className="pt-1 text-slate-400 font-mono text-[10px]">
-                    Endpoint Proxy: <code className="bg-white/70 px-1 py-0.5 rounded border border-emerald-200 text-emerald-800">/api/gas</code>
-                  </div>
-                </div>
-              ) : (
-                <div className="bg-amber-50 border border-amber-100 p-5 rounded-2xl space-y-2 text-amber-800">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
-                    <strong className="text-xs font-bold uppercase tracking-wider">Koneksi Backend Belum Ditemukan</strong>
-                  </div>
-                  <p className="text-xs leading-relaxed font-medium">
-                    Variabel lingkungan <code className="bg-amber-100 px-1 py-0.5 rounded text-amber-900 font-mono">GAS_URL</code> belum diatur pada file <code className="bg-amber-100 px-1 py-0.5 rounded text-amber-900 font-mono">.env</code> server backend Anda. Atur variabel tersebut dengan Web App URL Google Apps Script Anda untuk mengaktifkan sinkronisasi otomatis.
-                  </p>
-                </div>
-              )}
-
-              {/* Instructions */}
-              <div className="space-y-4">
-                <h4 className="font-bold text-slate-800 text-sm flex items-center gap-1.5">
-                  <span className="w-1.5 h-4 bg-blue-600 rounded-full inline-block"></span>
-                  Langkah-Langkah Pengaturan Google Apps Script:
-                </h4>
-                <ol className="list-decimal pl-5 space-y-2.5 text-slate-600">
-                  <li>Buka Google Spreadsheet target Anda (Disarankan gunakan ID: <code className="bg-slate-100 px-1 py-0.5 rounded font-mono select-all text-[11px]">{SPREADSHEET_ID}</code>).</li>
-                  <li>Di menu atas, pilih **Ekstensi** (Extensions) &gt; **Apps Script**.</li>
-                  <li>Hapus seluruh kode bawaan yang ada di editor, lalu salin dan tempel kode di bawah ini.</li>
-                  <li>Di kanan atas, klik **Terapkan** (Deploy) &gt; **Penerapan Baru** (New deployment).</li>
-                  <li>Klik ikon gerigi di sebelah "Pilih jenis" dan pilih **Aplikasi Web** (Web app).</li>
-                  <li>Ubah pengaturan konfigurasi berikut:
-                    <ul className="list-disc pl-5 mt-1 space-y-1 text-slate-500">
-                      <li>*Deskripsi:* Database PLN Material</li>
-                      <li>*Jalankan sebagai (Execute as):* **Saya (Email Anda)**</li>
-                      <li>*Siapa yang memiliki akses (Who has access):* **Siapa saja (Anyone)**</li>
-                    </ul>
-                  </li>
-                  <li>Klik **Terapkan** (Deploy) dan setujui otorisasi akun Google Anda jika diminta.</li>
-                  <li>Salin **URL Aplikasi Web** yang diberikan, lalu masukkan sebagai nilai <code className="bg-slate-100 px-1 py-0.5 rounded font-mono text-[11px]">GAS_URL</code> di file <code className="bg-slate-100 px-1 py-0.5 rounded font-mono text-[11px]">.env</code> server backend Anda.</li>
-                </ol>
-              </div>
-
-              {/* Code block copy section */}
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="font-bold text-slate-700">Kode Apps Script (Salin Semua):</span>
-                  <button
-                    onClick={() => {
-                      navigator.clipboard.writeText(GOOGLE_APPS_SCRIPT_CODE);
-                      alert('Kode Apps Script berhasil disalin ke clipboard!');
-                    }}
-                    className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg transition-colors cursor-pointer"
-                  >
-                    Salin Kode
-                  </button>
-                </div>
-                <pre className="p-4 bg-slate-900 text-slate-300 rounded-2xl overflow-x-auto text-[10px] font-mono leading-relaxed max-h-56">
-                  {GOOGLE_APPS_SCRIPT_CODE}
-                </pre>
-              </div>
-
-            </div>
-          </div>
-        </div>
-      )}
-
     </div>
   );
 }
 
-const GOOGLE_APPS_SCRIPT_CODE = `// KODE GOOGLE APPS SCRIPT (GAS) UNTUK INTEGRASI DATABASE SPREADSHEET
-// -------------------------------------------------------------
-// Salin semua kode ini dan tempelkan di editor Apps Script Anda.
-// Lalu terapkan (deploy) sebagai "Web App" (Aplikasi Web).
-
-const SPREADSHEET_ID = "${SPREADSHEET_ID}";
-
-function doGet(e) {
-  const action = e.parameter.action;
-  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
-  
-  // Inisialisasi sheet jika belum lengkap
-  ensureAndInitializeSheets(ss);
-  
-  if (action === "readAll" || !action) {
-    const data = {
-      records: fetchSheetValues(ss, "DATA"),
-      ulp: fetchSheetValues(ss, "ULP"),
-      posko: fetchSheetValues(ss, "POSKO"),
-      shift: fetchSheetValues(ss, "SHIFT"),
-      petugas: fetchSheetValues(ss, "PETUGAS"),
-      material: fetchSheetValues(ss, "MATERIAL")
-    };
-    return ContentService.createTextOutput(JSON.stringify({ status: "success", data: data }))
-      .setMimeType(ContentService.MimeType.JSON);
-  }
-  
-  return ContentService.createTextOutput(JSON.stringify({ status: "error", message: "Aksi tidak valid" }))
-    .setMimeType(ContentService.MimeType.JSON);
-}
-
-function doPost(e) {
-  try {
-    const postData = JSON.parse(e.postData.contents);
-    const action = postData.action;
-    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
-    
-    if (action === "writeRecords") {
-      const records = postData.records;
-      const sheet = ss.getSheetByName("DATA") || ss.insertSheet("DATA");
-      sheet.clearContents();
-      
-      if (records && records.length > 0) {
-        sheet.getRange(1, 1, records.length, records[0].length).setValues(records);
-      }
-      return ContentService.createTextOutput(JSON.stringify({ status: "success", message: "Data berhasil ditulis" }))
-        .setMimeType(ContentService.MimeType.JSON);
-    }
-    
-    return ContentService.createTextOutput(JSON.stringify({ status: "error", message: "Aksi tidak valid" }))
-      .setMimeType(ContentService.MimeType.JSON);
-  } catch (err) {
-    return ContentService.createTextOutput(JSON.stringify({ status: "error", message: err.toString() }))
-      .setMimeType(ContentService.MimeType.JSON);
-  }
-}
-
-function fetchSheetValues(ss, name) {
-  const sheet = ss.getSheetByName(name);
-  if (!sheet) return [];
-  const range = sheet.getDataRange();
-  if (!range) return [];
-  return range.getValues();
-}
-
-function ensureAndInitializeSheets(ss) {
-  const requiredSheets = ["DATA", "ULP", "POSKO", "PETUGAS", "MATERIAL", "SHIFT"];
-  for (let i = 0; i < requiredSheets.length; i++) {
-    const title = requiredSheets[i];
-    let sheet = ss.getSheetByName(title);
-    if (!sheet) {
-      sheet = ss.insertSheet(title);
-    }
-  }
-  
-  // Inisialisasi data bawaan jika sheet kosong
-  initSheetIfEmpty(ss, "ULP", ["name"], [
-    ["ULP Bukittinggi"],
-    ["ULP Payakumbuh"],
-    ["ULP Padang Panjang"],
-    ["ULP Solok"],
-    ["ULP Pariaman"],
-    ["ULP Lubuk Alung"],
-    ["ULP Batusangkar"],
-    ["ULP Lima Puluh Kota"],
-    ["ULP Sicincin"]
-  ]);
-  
-  initSheetIfEmpty(ss, "POSKO", ["name", "ulp"], [
-    ["Posko Bukittinggi Kota", "ULP Bukittinggi"],
-    ["Posko Agam Timur", "ULP Bukittinggi"],
-    ["Posko Payakumbuh", "ULP Payakumbuh"],
-    ["Posko Padang Panjang", "ULP Padang Panjang"],
-    ["Posko Solok Kota", "ULP Solok"],
-    ["Posko Pariaman", "ULP Pariaman"]
-  ]);
-  
-  initSheetIfEmpty(ss, "SHIFT", ["NAMA SHIFT"], [
-    ["Shift Pagi (08:00 - 16:00)"],
-    ["Shift Sore (16:00 - 00:00)"],
-    ["Shift Malam (00:00 - 08:00)"]
-  ]);
-  
-  initSheetIfEmpty(ss, "PETUGAS", ["name", "ulp"], [
-    ["Andi", "ULP Bukittinggi"],
-    ["Budi", "ULP Bukittinggi"],
-    ["Candra", "ULP Payakumbuh"],
-    ["Dedi", "ULP Solok"]
-  ]);
-  
-  initSheetIfEmpty(ss, "MATERIAL", ["ID", "NAMA MATERIAL", "KATEGORI"], [
-    ["SR_1X16", "SR 1x16 mm2", "Kabel & Aksesoris"],
-    ["SR_2X10", "SR 2x10 mm2", "Kabel & Aksesoris"],
-    ["SR_2X16", "SR 2x16 mm2", "Kabel & Aksesoris"],
-    ["TIC_2X16", "TIC 2x16 mm2", "Kabel & Aksesoris"],
-    ["TIC_4X16", "TIC 4x16 mm2", "Kabel & Aksesoris"],
-    ["KWH_1P_5A", "KWh Meter 1 Phase 5(20)A", "KWh Meter"],
-    ["KWH_1P_20A", "KWh Meter 1 Phase 20(80)A", "KWh Meter"],
-    ["KWH_3P_5A", "KWh Meter 3 Phase 5(20)A", "KWh Meter"],
-    ["MCB_1P_2A", "MCB 1 Phase 2A", "MCB"],
-    ["MCB_1P_4A", "MCB 1 Phase 4A", "MCB"],
-    ["MCB_1P_6A", "MCB 1 Phase 6A", "MCB"],
-    ["MCB_1P_10A", "MCB 1 Phase 10A", "MCB"],
-    ["MCB_1P_16A", "MCB 1 Phase 16A", "MCB"],
-    ["MCB_1P_20A", "MCB 1 Phase 20A", "MCB"],
-    ["MCB_1P_25A", "MCB 1 Phase 25A", "MCB"],
-    ["MCB_1P_35A", "MCB 1 Phase 35A", "MCB"],
-    ["MCB_1P_50A", "MCB 1 Phase 50A", "MCB"],
-    ["MCB_3P_16A", "MCB 3 Phase 16A", "MCB"],
-    ["MCB_3P_20A", "MCB 3 Phase 20A", "MCB"],
-    ["MCB_3P_25A", "MCB 3 Phase 25A", "MCB"],
-    ["MCB_3P_35A", "MCB 3 Phase 35A", "MCB"],
-    ["MCB_3P_50A", "MCB 3 Phase 50A", "MCB"],
-    ["FUSE_3A", "Fuse Link 3A", "Fuse Link"],
-    ["FUSE_6A", "Fuse Link 6A", "Fuse Link"],
-    ["FUSE_10A", "Fuse Link 10A", "Fuse Link"],
-    ["FUSE_15A", "Fuse Link 15A", "Fuse Link"],
-    ["FUSE_20A", "Fuse Link 20A", "Fuse Link"],
-    ["NH_FUSE_100A", "NH Fuse 100A", "NH Fuse"],
-    ["NH_FUSE_160A", "NH Fuse 160A", "NH Fuse"],
-    ["NH_FUSE_250A", "NH Fuse 250A", "NH Fuse"]
-  ]);
-}
-
-function initSheetIfEmpty(ss, title, headers, rows) {
-  const sheet = ss.getSheetByName(title);
-  if (sheet.getLastRow() === 0) {
-    sheet.appendRow(headers);
-    if (rows && rows.length > 0) {
-      sheet.getRange(2, 1, rows.length, rows[0].length).setValues(rows);
-    }
-  }
-}
-`;
