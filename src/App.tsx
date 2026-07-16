@@ -95,6 +95,18 @@ export default function App() {
     } catch (err: any) {
       console.error(err);
       setSheetsError(err.message || 'Gagal menyinkronkan data via GAS. Pastikan Web App URL Anda aktif.');
+      
+      // Fallback to localStorage on fetch failure so the app remains usable
+      const localData = localStorage.getItem('material_logs');
+      if (localData) {
+        try {
+          setRecords(JSON.parse(localData));
+        } catch (e) {
+          setRecords(INITIAL_MOCK_RECORDS);
+        }
+      } else {
+        setRecords(INITIAL_MOCK_RECORDS);
+      }
     } finally {
       setIsSheetsLoading(false);
     }
@@ -102,38 +114,43 @@ export default function App() {
 
   // Load initial data on mount
   useEffect(() => {
-    const localData = localStorage.getItem('material_logs');
-    if (localData) {
-      try {
-        setRecords(JSON.parse(localData));
-      } catch (err) {
-        console.error('Error parsing material records from localStorage:', err);
-        setRecords(INITIAL_MOCK_RECORDS);
-        localStorage.setItem('material_logs', JSON.stringify(INITIAL_MOCK_RECORDS));
-      }
-    } else {
-      setRecords(INITIAL_MOCK_RECORDS);
-      localStorage.setItem('material_logs', JSON.stringify(INITIAL_MOCK_RECORDS));
-    }
-
-    // Check if backend has GAS_URL configured
-    const checkGasBackend = async () => {
+    const initializeData = async () => {
+      let gasActive = false;
       try {
         const res = await fetch('/api/gas-config');
         if (res.ok) {
           const config = await res.json();
           if (config.configured) {
+            gasActive = true;
             setIsBackendGas(true);
             setGasUrlState('/api/gas');
+            // Directly load data from GAS - bypasses localStorage as primary source
             await handleLoadGasData('/api/gas');
           }
         }
       } catch (err) {
         console.error('Gagal memeriksa konfigurasi GAS backend:', err);
       }
+
+      // Fallback: If GAS is not active, load offline data from localStorage or mock data
+      if (!gasActive) {
+        const localData = localStorage.getItem('material_logs');
+        if (localData) {
+          try {
+            setRecords(JSON.parse(localData));
+          } catch (err) {
+            console.error('Error parsing material records from localStorage:', err);
+            setRecords(INITIAL_MOCK_RECORDS);
+            localStorage.setItem('material_logs', JSON.stringify(INITIAL_MOCK_RECORDS));
+          }
+        } else {
+          setRecords(INITIAL_MOCK_RECORDS);
+          localStorage.setItem('material_logs', JSON.stringify(INITIAL_MOCK_RECORDS));
+        }
+      }
     };
 
-    checkGasBackend();
+    initializeData();
   }, []);
 
   // Google Auth Listener
@@ -634,103 +651,103 @@ export default function App() {
       )}
 
       {/* Google Sheets / GAS Connection Banner */}
-      <div className="bg-white border-b border-slate-200 py-3 shadow-xs">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-            
-            <div className="flex items-center gap-3 w-full sm:w-auto">
-              {gasUrl ? (
-                <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 shrink-0">
-                  <Database className="h-5 w-5" />
-                </div>
-              ) : token ? (
-                <div className="w-10 h-10 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600 shrink-0">
-                  <Database className="h-5 w-5" />
-                </div>
-              ) : (
-                <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 shrink-0">
-                  <CloudOff className="h-5 w-5" />
-                </div>
-              )}
+      {(gasUrl || token || isSheetsLoading) && (
+        <div className="bg-white border-b border-slate-200 py-3 shadow-xs">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
               
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className={`inline-block w-2.5 h-2.5 rounded-full ${gasUrl || token ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'}`}></span>
-                  <h4 className="text-sm font-bold text-slate-800">
-                    {gasUrl || token ? 'Online' : 'Offline'}
-                  </h4>
+              <div className="flex items-center gap-3 w-full sm:w-auto">
+                {gasUrl ? (
+                  <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 shrink-0">
+                    <Database className="h-5 w-5" />
+                  </div>
+                ) : token ? (
+                  <div className="w-10 h-10 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600 shrink-0">
+                    <Database className="h-5 w-5" />
+                  </div>
+                ) : (
+                  <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 shrink-0">
+                    <CloudOff className="h-5 w-5" />
+                  </div>
+                )}
+                
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className={`inline-block w-2.5 h-2.5 rounded-full ${gasUrl || token ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'}`}></span>
+                    <h4 className="text-sm font-bold text-slate-800">
+                      {gasUrl || token ? 'Online' : 'Offline'}
+                    </h4>
+                  </div>
                 </div>
               </div>
+
+              <div className="flex-items-center gap-2 w-full sm:w-auto justify-end flex">
+                {isSheetsLoading && (
+                  <div className="flex items-center gap-1.5 text-xs text-slate-500 mr-2">
+                    <RefreshCw className="h-4 w-4 animate-spin text-blue-600" />
+                    <span>Memproses...</span>
+                  </div>
+                )}
+
+                {(gasUrl || token) && (
+                  <>
+                    <button
+                      onClick={() => handlePullFromSheets()}
+                      disabled={isSheetsLoading}
+                      className="flex items-center gap-1.5 bg-sky-50 text-sky-700 border border-sky-200 hover:bg-sky-100 disabled:opacity-50 px-3.5 py-1.5 rounded-lg text-xs font-bold cursor-pointer transition-colors"
+                      title="Tarik Data Terkini dari Google Sheets / GAS"
+                    >
+                      <ArrowDown className="h-3.5 w-3.5" />
+                      Tarik (Pull)
+                    </button>
+
+                    <button
+                      onClick={() => handlePushToSheets()}
+                      disabled={isSheetsLoading}
+                      className="flex items-center gap-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 disabled:opacity-50 px-3.5 py-1.5 rounded-lg text-xs font-bold cursor-pointer transition-colors"
+                      title="Kirim Data Lokal ke Google Sheets / GAS"
+                    >
+                      <ArrowUp className="h-3.5 w-3.5" />
+                      Kirim (Push)
+                    </button>
+                  </>
+                )}
+
+                {token && !gasUrl && (
+                  <button
+                    onClick={handleGoogleLogout}
+                    disabled={isSheetsLoading}
+                    className="flex items-center gap-1.5 bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 disabled:opacity-50 px-3.5 py-1.5 rounded-lg text-xs font-bold cursor-pointer transition-colors"
+                  >
+                    <LogOut className="h-3.5 w-3.5" />
+                    Disconnect OAuth
+                  </button>
+                )}
+              </div>
+
             </div>
 
-            <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
-              {isSheetsLoading && (
-                <div className="flex items-center gap-1.5 text-xs text-slate-500 mr-2">
-                  <RefreshCw className="h-4 w-4 animate-spin text-blue-600" />
-                  <span>Memproses...</span>
-                </div>
-              )}
-
-              {(gasUrl || token) && (
-                <>
-                  <button
-                    onClick={() => handlePullFromSheets()}
-                    disabled={isSheetsLoading}
-                    className="flex items-center gap-1.5 bg-sky-50 text-sky-700 border border-sky-200 hover:bg-sky-100 disabled:opacity-50 px-3.5 py-1.5 rounded-lg text-xs font-bold cursor-pointer transition-colors"
-                    title="Tarik Data Terkini dari Google Sheets / GAS"
-                  >
-                    <ArrowDown className="h-3.5 w-3.5" />
-                    Tarik (Pull)
-                  </button>
-
-                  <button
-                    onClick={() => handlePushToSheets()}
-                    disabled={isSheetsLoading}
-                    className="flex items-center gap-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 disabled:opacity-50 px-3.5 py-1.5 rounded-lg text-xs font-bold cursor-pointer transition-colors"
-                    title="Kirim Data Lokal ke Google Sheets / GAS"
-                  >
-                    <ArrowUp className="h-3.5 w-3.5" />
-                    Kirim (Push)
-                  </button>
-                </>
-              )}
-
-
-
-              {token && !gasUrl && (
-                <button
-                  onClick={handleGoogleLogout}
-                  disabled={isSheetsLoading}
-                  className="flex items-center gap-1.5 bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 disabled:opacity-50 px-3.5 py-1.5 rounded-lg text-xs font-bold cursor-pointer transition-colors"
-                >
-                  <LogOut className="h-3.5 w-3.5" />
-                  Disconnect OAuth
-                </button>
-              )}
-            </div>
+            {/* Messages Alert overlay */}
+            {(sheetsError || sheetsSuccessMessage) && (
+              <div className="mt-3 animate-fade-in">
+                {sheetsError && (
+                  <div className="flex items-center gap-2 bg-rose-50 border border-rose-200 text-rose-800 px-3 py-2 rounded-lg text-xs font-medium">
+                    <AlertCircle className="h-4 w-4 shrink-0 text-rose-500" />
+                    <span>{sheetsError}</span>
+                  </div>
+                )}
+                {sheetsSuccessMessage && (
+                  <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-200 text-emerald-800 px-3 py-2 rounded-lg text-xs font-medium">
+                    <CheckCircle className="h-4 w-4 shrink-0 text-emerald-500" />
+                    <span>{sheetsSuccessMessage}</span>
+                  </div>
+                )}
+              </div>
+            )}
 
           </div>
-
-          {/* Messages Alert overlay */}
-          {(sheetsError || sheetsSuccessMessage) && (
-            <div className="mt-3 animate-fade-in">
-              {sheetsError && (
-                <div className="flex items-center gap-2 bg-rose-50 border border-rose-200 text-rose-800 px-3 py-2 rounded-lg text-xs font-medium">
-                  <AlertCircle className="h-4 w-4 shrink-0 text-rose-500" />
-                  <span>{sheetsError}</span>
-                </div>
-              )}
-              {sheetsSuccessMessage && (
-                <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-200 text-emerald-800 px-3 py-2 rounded-lg text-xs font-medium">
-                  <CheckCircle className="h-4 w-4 shrink-0 text-emerald-500" />
-                  <span>{sheetsSuccessMessage}</span>
-                </div>
-              )}
-            </div>
-          )}
-
         </div>
-      </div>
+      )}
 
       {/* Main Content Area */}
       <main className="flex-1 overflow-y-auto py-6">
@@ -935,7 +952,7 @@ export default function App() {
           </span>
           <span className="flex items-center gap-1.5 font-mono">
             <Database className="h-3 w-3 text-slate-300" />
-            Penyimpanan: {gasUrl ? 'Google Apps Script Cloud DB' : (token ? 'Google Sheets OAuth DB' : 'Client LocalStorage (Offline)')}
+            Penyimpanan: {gasUrl ? 'Google Apps Script Cloud DB' : (token ? 'Google Sheets OAuth DB' : 'Penyimpanan Lokal Aktif (Browser)')}
           </span>
         </div>
       </footer>
