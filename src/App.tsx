@@ -43,6 +43,7 @@ import {
   fetchDataFromGas,
   saveRecordsToGas
 } from './utils/sheets';
+import { SPREADSHEET_WEB_APP_URL } from './utils/constants';
 
 export default function App() {
   const [records, setRecords] = useState<MaterialRecord[]>([]);
@@ -123,9 +124,9 @@ export default function App() {
           if (config.configured) {
             gasActive = true;
             setIsBackendGas(true);
-            setGasUrlState('/api/gas');
+            setGasUrlState(SPREADSHEET_WEB_APP_URL);
             // Directly load data from GAS - bypasses localStorage as primary source
-            await handleLoadGasData('/api/gas');
+            await handleLoadGasData(SPREADSHEET_WEB_APP_URL);
           }
         }
       } catch (err) {
