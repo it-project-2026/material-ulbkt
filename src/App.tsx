@@ -65,6 +65,12 @@ export default function App() {
   // Google Sheets options states
   const [sheetsOptions, setSheetsOptions] = useState<SheetsReferenceOptions | null>(null);
 
+  // Initial Sync Progress States
+  const [isInitialSyncing, setIsInitialSyncing] = useState<boolean>(true);
+  const [syncStep, setSyncStep] = useState<string>('Memulai aplikasi...');
+  const [syncPercent, setSyncPercent] = useState<number>(0);
+  const [syncStatus, setSyncStatus] = useState<'loading' | 'success' | 'error'>('loading');
+
   // Google Sheets authentication state
   const [user, setUser] = useState<any>(null);
   const [token, setToken] = useState<string | null>(null);
@@ -118,38 +124,67 @@ export default function App() {
     const initializeData = async () => {
       let gasActive = false;
       setIsSheetsLoading(true);
+      setSyncStatus('loading');
+      
       try {
+        setSyncStep('Memeriksa status server backend PLN...');
+        setSyncPercent(15);
+        await new Promise(r => setTimeout(r, 400)); // Smooth entry transition
+
         const res = await fetch('/api/gas-config');
         if (res.ok) {
+          setSyncStep('Mengunduh konfigurasi Google Apps Script...');
+          setSyncPercent(35);
+          await new Promise(r => setTimeout(r, 300));
+
           const config = await res.json();
           if (config.configured) {
             gasActive = true;
             setIsBackendGas(true);
             setGasUrlState('/api/gas');
+            
+            setSyncStep('Menghubungkan ke Google Sheets Cloud PLN...');
+            setSyncPercent(55);
+            await new Promise(r => setTimeout(r, 300));
+            
+            setSyncStep('Menyinkronkan data riwayat & opsi referensi petugas...');
+            setSyncPercent(75);
+            
             // Directly load data from GAS - bypasses localStorage as primary source
-            await handleLoadGasData('/api/gas');
-          }
-        }
-      } catch (err) {
-        console.error('Gagal memeriksa konfigurasi GAS backend:', err);
-      } finally {
-        // Fallback: If GAS is not active, load offline data from localStorage or mock data
-        if (!gasActive) {
-          const localData = localStorage.getItem('material_logs');
-          if (localData) {
-            try {
-              setRecords(JSON.parse(localData));
-            } catch (err) {
-              console.error('Error parsing material records from localStorage:', err);
-              setRecords(INITIAL_MOCK_RECORDS);
-              localStorage.setItem('material_logs', JSON.stringify(INITIAL_MOCK_RECORDS));
-            }
+            const activeMaterialsList = sheetsOptions?.materials || MATERIAL_LIST;
+            const { records: gasRecords, options: gasOpts } = await fetchDataFromGas('/api/gas', activeMaterialsList);
+            setSheetsOptions(gasOpts);
+            
+            const reindexed = gasRecords.map((rec, index) => ({
+              ...rec,
+              no: index + 1
+            }));
+            
+            setSyncStep('Menyimpan data sinkronisasi ke penyimpanan aman...');
+            setSyncPercent(95);
+            setRecords(reindexed);
+            localStorage.setItem('material_logs', JSON.stringify(reindexed));
+            await new Promise(r => setTimeout(r, 300));
+            
+            setSyncStep('Selesai! Membuka portal utama...');
+            setSyncPercent(100);
+            setSyncStatus('success');
+            await new Promise(r => setTimeout(r, 500));
+            setIsInitialSyncing(false);
           } else {
-            setRecords(INITIAL_MOCK_RECORDS);
-            localStorage.setItem('material_logs', JSON.stringify(INITIAL_MOCK_RECORDS));
+            throw new Error('Konfigurasi database Cloud (GAS_URL) belum terpasang di server.');
           }
-          setIsSheetsLoading(false);
+        } else {
+          throw new Error('Gagal berkomunikasi dengan server backend PLN.');
         }
+      } catch (err: any) {
+        console.error('Gagal memeriksa konfigurasi GAS backend:', err);
+        setSheetsError(err.message || 'Gagal menyelaraskan koneksi database cloud.');
+        setSyncStatus('error');
+        
+        // If error, let the user select Retry or Offline Mode, so they aren't blocked.
+      } finally {
+        setIsSheetsLoading(false);
       }
     };
 
@@ -454,6 +489,163 @@ export default function App() {
   const activePoskoList = sheetsOptions?.posko || null;
   const activeShiftList = sheetsOptions?.shift || null;
   const activePetugasList = sheetsOptions?.petugas || null;
+
+  if (isInitialSyncing) {
+    return (
+      <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col items-center justify-center p-4 font-sans relative overflow-hidden">
+        {/* Decorative ambient background elements */}
+        <div className="absolute top-0 left-0 -translate-x-12 -translate-y-12 w-96 h-96 bg-[#007491]/10 rounded-full blur-3xl pointer-events-none"></div>
+        <div className="absolute bottom-0 right-0 translate-x-12 translate-y-12 w-96 h-96 bg-yellow-500/5 rounded-full blur-3xl pointer-events-none"></div>
+
+        <div className="w-full max-w-md bg-slate-800/80 backdrop-blur-md border border-slate-700/50 rounded-3xl p-8 shadow-2xl relative z-10 space-y-8 text-center animate-fade-in">
+          {/* Logo Brand Name */}
+          <div className="flex flex-col items-center gap-3">
+            <div className="w-16 h-16 bg-yellow-400 rounded-2xl flex items-center justify-center font-black text-slate-950 text-xl shadow-lg relative overflow-hidden shrink-0 select-none animate-pulse">
+              <span>PLN</span>
+              <div className="absolute right-0 top-0 w-3 h-full bg-cyan-700/20 transform rotate-12"></div>
+            </div>
+            <div>
+              <h1 className="text-xl font-extrabold font-display tracking-tight text-white flex items-center justify-center gap-2">
+                LOGIMAT PLN
+                <span className="text-[10px] bg-yellow-400 text-slate-950 font-extrabold px-1.5 py-0.5 rounded-sm tracking-wider uppercase">
+                  v2.1
+                </span>
+              </h1>
+              <p className="text-xs text-slate-400 mt-1 font-medium">Sistem Rekapitulasi Real-Time Material Lapangan</p>
+            </div>
+          </div>
+
+          {/* Sync Progress Indicator */}
+          <div className="space-y-4 py-2">
+            <div className="flex items-center justify-between text-xs font-semibold px-1">
+              <span className="text-slate-300 flex items-center gap-1.5 min-w-0 truncate">
+                <RefreshCw className="h-3.5 w-3.5 animate-spin text-cyan-400 shrink-0" />
+                <span className="truncate">{syncStep}</span>
+              </span>
+              <span className="text-cyan-400 font-mono shrink-0 ml-2">{syncPercent}%</span>
+            </div>
+
+            {/* Progress Bar Container */}
+            <div className="w-full h-2.5 bg-slate-700/50 rounded-full overflow-hidden border border-slate-600/30">
+              <div 
+                className="h-full bg-gradient-to-r from-cyan-500 via-[#007491] to-yellow-400 rounded-full transition-all duration-300 ease-out shadow-[0_0_12px_rgba(34,211,238,0.3)]"
+                style={{ width: `${syncPercent}%` }}
+              ></div>
+            </div>
+
+            {/* Status indicators */}
+            <div className="text-[11px] text-slate-500 flex items-center justify-center gap-1.5 pt-1">
+              <Database className="h-3.5 w-3.5 text-cyan-500/70" />
+              <span>Menghubungkan langsung ke Google Sheets PLN Cloud...</span>
+            </div>
+          </div>
+
+          {/* Fallback & Error Handling */}
+          {syncStatus === 'error' ? (
+            <div className="bg-rose-950/40 border border-rose-800/50 p-4 rounded-2xl space-y-3 animate-fade-in">
+              <div className="flex items-start gap-2.5 text-left text-xs text-rose-200">
+                <AlertCircle className="h-4 w-4 shrink-0 text-rose-500 mt-0.5" />
+                <div className="min-w-0">
+                  <p className="font-bold">Gagal Terhubung ke Database Cloud</p>
+                  <p className="text-[11px] text-rose-300/90 mt-1 leading-relaxed break-words">
+                    {sheetsError || 'Pastikan server backend atau GAS_URL aktif.'}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 pt-1">
+                <button
+                  onClick={() => {
+                    setSheetsError(null);
+                    setSyncStatus('loading');
+                    // Retry initialization
+                    const retryInit = async () => {
+                      try {
+                        setIsSheetsLoading(true);
+                        setSyncStep('Memeriksa status server backend PLN...');
+                        setSyncPercent(15);
+                        await new Promise(r => setTimeout(r, 400));
+                        
+                        const res = await fetch('/api/gas-config');
+                        if (res.ok) {
+                          setSyncStep('Mengunduh konfigurasi Google Apps Script...');
+                          setSyncPercent(35);
+                          await new Promise(r => setTimeout(r, 300));
+
+                          const config = await res.json();
+                          if (config.configured) {
+                            setSyncStep('Menghubungkan ke Google Sheets Cloud PLN...');
+                            setSyncPercent(60);
+                            await new Promise(r => setTimeout(r, 300));
+
+                            setSyncStep('Menyinkronkan data riwayat & opsi referensi petugas...');
+                            setSyncPercent(85);
+
+                            const activeMaterialsList = sheetsOptions?.materials || MATERIAL_LIST;
+                            const { records: gasRecords, options: gasOpts } = await fetchDataFromGas('/api/gas', activeMaterialsList);
+                            setSheetsOptions(gasOpts);
+                            
+                            const reindexed = gasRecords.map((rec, index) => ({
+                              ...rec,
+                              no: index + 1
+                            }));
+                            
+                            setRecords(reindexed);
+                            localStorage.setItem('material_logs', JSON.stringify(reindexed));
+                            
+                            setSyncPercent(100);
+                            setSyncStep('Selesai! Membuka portal...');
+                            setSyncStatus('success');
+                            await new Promise(r => setTimeout(r, 600));
+                            setIsInitialSyncing(false);
+                          } else {
+                            throw new Error('Database Cloud (GAS_URL) belum terkonfigurasi pada server backend.');
+                          }
+                        } else {
+                          throw new Error('Gagal memeriksa status server backend.');
+                        }
+                      } catch (err: any) {
+                        setSheetsError(err.message || 'Gagal menyelaraskan koneksi database.');
+                        setSyncStatus('error');
+                      } finally {
+                        setIsSheetsLoading(false);
+                      }
+                    };
+                    retryInit();
+                  }}
+                  className="flex-1 bg-slate-700 hover:bg-slate-600 text-white font-bold py-2 px-3 rounded-xl text-xs transition-colors cursor-pointer"
+                >
+                  Coba Lagi
+                </button>
+                <button
+                  onClick={() => {
+                    // Force skip to local/offline data
+                    const localData = localStorage.getItem('material_logs');
+                    if (localData) {
+                      try {
+                        setRecords(JSON.parse(localData));
+                      } catch (e) {
+                        setRecords(INITIAL_MOCK_RECORDS);
+                      }
+                    } else {
+                      setRecords(INITIAL_MOCK_RECORDS);
+                    }
+                    setIsInitialSyncing(false);
+                  }}
+                  className="flex-1 bg-yellow-500 hover:bg-yellow-400 text-slate-950 font-bold py-2 px-3 rounded-xl text-xs transition-colors cursor-pointer"
+                >
+                  Mode Offline (Lokal)
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="text-[11px] text-slate-500 border-t border-slate-700/40 pt-4 leading-relaxed">
+              Teknologi sinkronisasi otomatis Cloud PLN. Mengabaikan penyimpanan lokal sebagai sumber utama demi akurasi data kerja tim di lapangan.
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
