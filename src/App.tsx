@@ -128,7 +128,7 @@ export default function App() {
     setSheetsError(null);
     
     try {
-      setSyncStep('Memeriksa status server backend PLN...');
+      setSyncStep('Memeriksa status server backend PLN ES...');
       setSyncPercent(15);
       await new Promise(r => setTimeout(r, 450)); // Smooth entry transition
 
@@ -168,7 +168,7 @@ export default function App() {
 
         setGasUrlState(gasUrlToUse);
         
-        setSyncStep('Menghubungkan ke Google Sheets Cloud PLN...');
+        setSyncStep('Menghubungkan ke Google Sheets Cloud PLN ES...');
         setSyncPercent(55);
         await new Promise(r => setTimeout(r, 300));
         
@@ -532,12 +532,12 @@ export default function App() {
           {/* Logo Brand Name */}
           <div className="flex flex-col items-center gap-3">
             <div className="w-16 h-16 bg-yellow-400 rounded-2xl flex items-center justify-center font-black text-slate-950 text-xl shadow-lg relative overflow-hidden shrink-0 select-none animate-pulse">
-              <span>PLN</span>
+              <span>PLN ES</span>
               <div className="absolute right-0 top-0 w-3 h-full bg-cyan-700/20 transform rotate-12"></div>
             </div>
             <div>
               <h1 className="text-xl font-extrabold font-display tracking-tight text-white flex items-center justify-center gap-2">
-                LOGIMAT PLN
+                LOGIMAT PLN ES
                 <span className="text-[10px] bg-yellow-400 text-slate-950 font-extrabold px-1.5 py-0.5 rounded-sm tracking-wider uppercase">
                   v2.1
                 </span>
@@ -567,7 +567,7 @@ export default function App() {
             {/* Status indicators */}
             <div className="text-[11px] text-slate-500 flex items-center justify-center gap-1.5 pt-1">
               <Database className="h-3.5 w-3.5 text-cyan-500/70" />
-              <span>Menghubungkan langsung ke Google Sheets PLN Cloud...</span>
+              <span>Menghubungkan langsung ke Google Sheets PLN ES Cloud...</span>
             </div>
           </div>
 
@@ -615,7 +615,7 @@ export default function App() {
             </div>
           ) : (
             <div className="text-[11px] text-slate-500 border-t border-slate-700/40 pt-4 leading-relaxed">
-              Teknologi sinkronisasi otomatis Cloud PLN. Mengabaikan penyimpanan lokal sebagai sumber utama demi akurasi data kerja tim di lapangan.
+              Teknologi sinkronisasi otomatis Cloud PLN ES. Mengabaikan penyimpanan lokal sebagai sumber utama demi akurasi data kerja tim di lapangan.
             </div>
           )}
         </div>
@@ -626,7 +626,7 @@ export default function App() {
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
       
-      {/* PLN Iconic Top Header Brand */}
+      {/* PLN ES Iconic Top Header Brand */}
       <header className="bg-[#007491] text-white border-b border-cyan-800 shadow-sm shrink-0">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="h-16 flex items-center justify-between">
@@ -634,12 +634,12 @@ export default function App() {
             {/* Logo Brand Name */}
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 bg-yellow-400 rounded-lg flex items-center justify-center font-bold text-slate-900 shadow-sm relative overflow-hidden shrink-0 select-none">
-                <span className="text-sm tracking-tighter">PLN</span>
+                <span className="text-sm tracking-tighter">PLN ES</span>
                 <div className="absolute right-0 top-0 w-2 h-full bg-cyan-700/20 transform rotate-12"></div>
               </div>
               <div>
                 <h1 className="text-sm sm:text-base font-bold font-display tracking-tight text-white flex items-center gap-1.5">
-                  LOGIMAT PLN
+                  LOGIMAT PLN ES
                   <span className="text-[9px] bg-yellow-400 text-slate-950 font-extrabold px-1.5 py-0.5 rounded-sm tracking-wider uppercase">
                     v2.1
                   </span>
@@ -850,7 +850,7 @@ export default function App() {
                     </h4>
                   </div>
                   <p className="text-[11px] text-slate-500 mt-0.5 truncate">
-                    {gasUrl ? 'Sinkronisasi dua arah real-time dengan Spreadsheet Cloud PLN aktif.' : (token ? 'Terhubung dengan akun Google Sheets Anda.' : (isSheetsLoading ? 'Menyelaraskan data dan opsi referensi...' : 'Menggunakan penyimpanan lokal browser.'))}
+                    {gasUrl ? 'Sinkronisasi dua arah real-time dengan Spreadsheet Cloud PLN ES aktif.' : (token ? 'Terhubung dengan akun Google Sheets Anda.' : (isSheetsLoading ? 'Menyelaraskan data dan opsi referensi...' : 'Menggunakan penyimpanan lokal browser.'))}
                   </p>
                 </div>
               </div>
@@ -938,10 +938,10 @@ export default function App() {
                   <div className="absolute right-0 top-0 translate-x-12 -translate-y-12 w-64 h-64 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none"></div>
                   <div className="max-w-xl space-y-3 relative z-10">
                     <span className="text-[10px] bg-yellow-400 text-slate-950 font-bold uppercase px-2.5 py-1 rounded-full">
-                      PT PLN PERSERO • PORTAL UTAMA
+                      PT PLN ES PERSERO • PORTAL UTAMA
                     </span>
                     <h2 className="text-2xl sm:text-3xl font-extrabold font-display tracking-tight">
-                      Selamat Datang di LOGIMAT PLN
+                      Selamat Datang di LOGIMAT PLN ES
                     </h2>
                     <p className="text-sm text-cyan-100 leading-relaxed">
                       Sistem rekapitulasi real-time penggunaan material lapangan. Kelola data serah terima shift secara akurat, terstruktur, dan terintegrasi langsung dengan database Google Sheets pusat.
@@ -1123,7 +1123,7 @@ export default function App() {
       <footer className="bg-white border-t border-slate-200 py-4 text-center text-[11px] text-slate-400 shrink-0 font-medium">
         <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row justify-between items-center gap-2">
           <span>
-            © 2026 PT PLN (Persero) Unit Induk Wilayah. Hak Cipta Dilindungi.
+            © 2026 PT PLN ES (Persero) Unit Induk Wilayah. Hak Cipta Dilindungi.
           </span>
           <span className="flex items-center gap-1.5 font-mono">
             <Database className="h-3 w-3 text-slate-300" />

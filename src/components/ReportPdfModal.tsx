@@ -1,8 +1,9 @@
 import React, { useRef, useState } from 'react';
 import { MaterialRecord, MATERIAL_LIST, MaterialItem } from '../types';
-import { Download, Printer, X, FileText, Check, Loader2 } from 'lucide-react';
+import { Download, Printer, X, FileText, Check, Loader2, Eraser } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
+import SignatureCanvas from 'react-signature-canvas';
 
 interface ReportPdfModalProps {
   record: MaterialRecord;
@@ -15,6 +16,9 @@ export default function ReportPdfModal({ record, onClose, materialsList }: Repor
   const reportRef = useRef<HTMLDivElement>(null);
   const [isDownloading, setIsDownloading] = useState(false);
   const [downloadSuccess, setDownloadSuccess] = useState(false);
+  
+  const sigCanvasSerah = useRef<SignatureCanvas>(null);
+  const sigCanvasTerima = useRef<SignatureCanvas>(null);
 
   // Helper to format date Indonesian style
   const formatDateIndo = (timestampStr: string) => {
@@ -242,7 +246,7 @@ export default function ReportPdfModal({ record, onClose, materialsList }: Repor
         {/* Action Panel */}
         <div className="bg-slate-800/30 px-6 py-3 border-b border-slate-800 flex flex-wrap gap-2.5 items-center justify-between shrink-0">
           <p className="text-xs text-slate-300">
-            Dokumen siap diunduh dalam format PDF resmi PLN untuk laporan harian/shift.
+            Dokumen siap diunduh dalam format PDF resmi untuk laporan harian/shift.
           </p>
           <div className="flex items-center gap-2">
             <button
@@ -294,7 +298,7 @@ export default function ReportPdfModal({ record, onClose, materialsList }: Repor
               <div className="text-center font-bold uppercase tracking-wide">
                 <div className="text-sm font-black underline" style={{ fontSize: '15px' }}>DAFTAR PEMAKAIAN MATERIAL MOBILE YANTEK</div>
                 <div className="text-xs mt-1" style={{ fontSize: '12px' }}>
-                  {record.posko.toUpperCase()} {record.ulp.toUpperCase()}
+                  {record.shift.toUpperCase()} {record.posko.toUpperCase()} {record.ulp.toUpperCase()}
                 </div>
                 <div className="text-xs font-normal mt-1 mb-4" style={{ fontSize: '11px' }}>
                   {formatDateIndo(record.timestamp)}
@@ -358,13 +362,39 @@ export default function ReportPdfModal({ record, onClose, materialsList }: Repor
               <div className="mt-8 grid grid-cols-2 gap-8 text-center" style={{ fontSize: '11px' }}>
                 <div>
                   <p className="font-bold">PETUGAS YANG MENYERAHKAN,</p>
-                  <div className="h-16"></div>
+                  <div className="h-20 border border-slate-300 rounded mt-1 mb-2 bg-slate-50 relative">
+                    <SignatureCanvas 
+                      ref={sigCanvasSerah} 
+                      penColor='black' 
+                      canvasProps={{width: 300, height: 80, className: 'sigCanvas w-full h-full'}} 
+                    />
+                    <button 
+                      onClick={() => sigCanvasSerah.current?.clear()}
+                      className="absolute top-1 right-1 p-1 bg-white/80 rounded hover:bg-white"
+                      title="Hapus tanda tangan"
+                    >
+                      <Eraser className="h-3 w-3 text-slate-500" />
+                    </button>
+                  </div>
                   <p className="font-bold underline">({record.petugasSerah.toUpperCase()})</p>
                   <p className="text-[9px] text-slate-500 font-mono mt-0.5">Petugas Serah Shift</p>
                 </div>
                 <div>
                   <p className="font-bold">PETUGAS YANG MENERIMA,</p>
-                  <div className="h-16"></div>
+                  <div className="h-20 border border-slate-300 rounded mt-1 mb-2 bg-slate-50 relative">
+                    <SignatureCanvas 
+                      ref={sigCanvasTerima} 
+                      penColor='black' 
+                      canvasProps={{width: 300, height: 80, className: 'sigCanvas w-full h-full'}} 
+                    />
+                    <button 
+                      onClick={() => sigCanvasTerima.current?.clear()}
+                      className="absolute top-1 right-1 p-1 bg-white/80 rounded hover:bg-white"
+                      title="Hapus tanda tangan"
+                    >
+                      <Eraser className="h-3 w-3 text-slate-500" />
+                    </button>
+                  </div>
                   <p className="font-bold underline">({record.petugasTerima.toUpperCase()})</p>
                   <p className="text-[9px] text-slate-500 font-mono mt-0.5">Petugas Terima Shift</p>
                 </div>
@@ -372,7 +402,7 @@ export default function ReportPdfModal({ record, onClose, materialsList }: Repor
 
               {/* Document footer meta */}
               <div className="mt-6 border-t border-dashed border-black/30 pt-2 flex justify-between text-[8px] text-slate-400 font-sans">
-                <span>LOGIMAT PLN v2.1 • Generated Real-Time</span>
+                <span>LOGIMAT v2.1 • Generated Real-Time</span>
                 <span>Ref ID: {record.id} • Timestamps: {record.timestamp}</span>
               </div>
 

@@ -374,7 +374,7 @@ export default function MaterialTable({ records, onEdit, onDelete, materialsList
             {/* Modal Header */}
             <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50 rounded-t-2xl">
               <div>
-                <h3 className="text-base font-bold text-slate-800 font-display">Rincian Laporan Material PLN</h3>
+                <h3 className="text-base font-bold text-slate-800 font-display">Rincian Laporan Material PLN ES</h3>
                 <p className="text-[10px] text-slate-400 font-mono">No. Rekor: {selectedRecord.no} • ID: {selectedRecord.id}</p>
               </div>
               <button

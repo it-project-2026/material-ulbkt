@@ -392,7 +392,7 @@ export default function Dashboard({ records, materialsList }: DashboardProps) {
                 </p>
               </div>
               <div className="text-xs text-blue-300 font-medium pt-2">
-                * Ekspor data ke format Excel (TSV) di tab "Ekspor & Impor" untuk rekap bulanan PLN Pusat.
+                * Ekspor data ke format Excel (TSV) di tab "Ekspor & Impor" untuk rekap bulanan PLN ES Pusat.
               </div>
             </div>
 

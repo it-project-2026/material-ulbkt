@@ -100,7 +100,15 @@ async function startServer() {
     }
 
     try {
-      const response = await fetch(gasUrl, {
+      const urlObj = new URL(gasUrl);
+      // Copy all incoming search params to the target URL
+      Object.entries(req.query).forEach(([key, val]) => {
+        if (val !== undefined) {
+          urlObj.searchParams.set(key, String(val));
+        }
+      });
+
+      const response = await fetch(urlObj.toString(), {
         method: "POST",
         headers: {
           "Content-Type": "text/plain;charset=utf-8"
@@ -142,7 +150,7 @@ async function startServer() {
   }
 
   app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Server PLN Logimat berjalan di http://localhost:${PORT}`);
+    console.log(`Server PLN ES Logimat berjalan di http://localhost:${PORT}`);
   });
 }
 

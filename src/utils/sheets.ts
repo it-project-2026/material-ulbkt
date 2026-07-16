@@ -44,7 +44,7 @@ export const initAuth = (
   if (cachedAccessToken) {
     setTimeout(() => {
       if (onAuthSuccess) {
-        onAuthSuccess(savedUser || { displayName: 'Petugas PLN' }, cachedAccessToken!);
+        onAuthSuccess(savedUser || { displayName: 'Petugas PLN ES' }, cachedAccessToken!);
       }
     }, 50);
   }
@@ -67,7 +67,7 @@ export const initAuth = (
       const storedToken = localStorage.getItem('google_sheets_token');
       if (storedToken) {
         cachedAccessToken = storedToken;
-        if (onAuthSuccess) onAuthSuccess(savedUser || { displayName: 'Petugas PLN' }, storedToken);
+        if (onAuthSuccess) onAuthSuccess(savedUser || { displayName: 'Petugas PLN ES' }, storedToken);
       } else {
         cachedAccessToken = null;
         if (onAuthFailure) onAuthFailure();
@@ -414,7 +414,8 @@ export async function saveRecordsToGas(
     records: [headers, ...rows]
   };
 
-  const res = await fetch(gasUrl, {
+  const url = `${gasUrl}${gasUrl.includes('?') ? '&' : '?'}action=writeRecords`;
+  const res = await fetch(url, {
     method: 'POST',
     mode: 'cors',
     headers: {

@@ -32,7 +32,7 @@ export default function FileManagement({ records, onImport, onClearAll, material
     const dateStr = now.toLocaleDateString('sv'); // YYYY-MM-DD
     
     link.setAttribute('href', url);
-    link.setAttribute('download', `Rekap_Material_PLN_${dateStr}.csv`);
+    link.setAttribute('download', `Rekap_Material_PLN_ES_${dateStr}.csv`);
     link.style.visibility = 'hidden';
     document.body.appendChild(link);
     link.click();
@@ -150,7 +150,7 @@ export default function FileManagement({ records, onImport, onClearAll, material
         <div className="space-y-2">
           <h3 className="text-sm font-semibold text-slate-800 font-display">Ekspor Rekapitulasi Material</h3>
           <p className="text-xs text-slate-500 leading-relaxed">
-            Unduh seluruh baris rekor laporan material dalam sistem ke spreadsheet Excel atau CSV yang siap dikirim untuk verifikasi administrasi PLN Unit.
+            Unduh seluruh baris rekor laporan material dalam sistem ke spreadsheet Excel atau CSV yang siap dikirim untuk verifikasi administrasi PLN ES Unit.
           </p>
         </div>
 
