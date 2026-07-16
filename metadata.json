@@ -1,0 +1,6 @@
+{
+  "name": "Aplikasi Input Data Material",
+  "description": "Aplikasi pencatatan, monitoring, dan ekspor data penggunaan material jaringan listrik seperti KWh Meter, MCB, Fuse Link, dan NH Fuse tingkat ULP dan Posko.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
