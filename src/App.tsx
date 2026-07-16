@@ -72,9 +72,8 @@ export default function App() {
   const [sheetsSuccessMessage, setSheetsSuccessMessage] = useState<string | null>(null);
 
   // GAS States
-  const [gasUrl, setGasUrlState] = useState<string>(() => getGasUrl());
+  const [gasUrl, setGasUrlState] = useState<string>('');
   const [showGasModal, setShowGasModal] = useState<boolean>(false);
-  const [inputGasUrl, setInputGasUrl] = useState<string>(() => getGasUrl());
   const [isBackendGas, setIsBackendGas] = useState<boolean>(false);
 
   // Fetch dynamic reference options and records from Google Apps Script (GAS)
@@ -96,50 +95,10 @@ export default function App() {
       setTimeout(() => setSheetsSuccessMessage(null), 4000);
     } catch (err: any) {
       console.error(err);
-      setSheetsError(err.message || 'Gagal menyinkronkan data via GAS. Pastikan Web App URL Anda aktif dan mengizinkan CORS.');
+      setSheetsError(err.message || 'Gagal menyinkronkan data via GAS. Pastikan Web App URL Anda aktif.');
     } finally {
       setIsSheetsLoading(false);
     }
-  };
-
-  const handleSaveGasConfig = async (url: string) => {
-    setIsSheetsLoading(true);
-    setSheetsError(null);
-    setSheetsSuccessMessage(null);
-    try {
-      const activeMaterialsList = sheetsOptions?.materials || MATERIAL_LIST;
-      const { records: gasRecords, options: gasOpts } = await fetchDataFromGas(url, activeMaterialsList);
-      
-      // If success, save
-      setGasUrl(url);
-      setGasUrlState(url);
-      setSheetsOptions(gasOpts);
-      
-      const reindexed = gasRecords.map((rec, index) => ({
-        ...rec,
-        no: index + 1
-      }));
-      setRecords(reindexed);
-      localStorage.setItem('material_logs', JSON.stringify(reindexed));
-      
-      setSheetsSuccessMessage('Berhasil mengonfigurasi dan terhubung ke Spreadsheet melalui GAS!');
-      setTimeout(() => setSheetsSuccessMessage(null), 4000);
-      setShowGasModal(false);
-    } catch (err: any) {
-      console.error(err);
-      setSheetsError(err.message || 'Gagal memvalidasi Web App URL GAS. Silakan periksa kembali URL Anda.');
-    } finally {
-      setIsSheetsLoading(false);
-    }
-  };
-
-  const handleDisconnectGas = () => {
-    setGasUrl('');
-    setGasUrlState('');
-    setInputGasUrl('');
-    setSheetsOptions(null);
-    setSheetsSuccessMessage('Koneksi GAS diputuskan. Kembali ke penyimpanan offline.');
-    setTimeout(() => setSheetsSuccessMessage(null), 4000);
   };
 
   // Load initial data on mount
@@ -168,17 +127,10 @@ export default function App() {
             setIsBackendGas(true);
             setGasUrlState('/api/gas');
             await handleLoadGasData('/api/gas');
-            return;
           }
         }
       } catch (err) {
         console.error('Gagal memeriksa konfigurasi GAS backend:', err);
-      }
-
-      // Fallback: Auto-load from localStorage GAS if configured
-      const activeGasUrl = getGasUrl();
-      if (activeGasUrl) {
-        handleLoadGasData(activeGasUrl);
       }
     };
 
@@ -711,13 +663,9 @@ export default function App() {
                 </div>
                 {gasUrl ? (
                   <p className="text-xs text-slate-500 mt-0.5 truncate max-w-lg">
-                    {isBackendGas ? (
-                      <span className="inline-flex items-center gap-1 text-emerald-600 font-semibold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100">
-                        ⚡ Google Apps Script Terintegrasi Server (Backend Proxy)
-                      </span>
-                    ) : (
-                      <>URL GAS: <code className="bg-slate-100 px-1 py-0.5 rounded text-[11px] font-mono break-all select-all">{gasUrl}</code></>
-                    )}
+                    <span className="inline-flex items-center gap-1 text-emerald-600 font-semibold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100">
+                      ⚡ Google Apps Script Terintegrasi Server (Backend Proxy)
+                    </span>
                   </p>
                 ) : token ? (
                   <p className="text-xs text-slate-500 mt-0.5 flex flex-wrap items-center gap-x-1.5">
@@ -734,7 +682,7 @@ export default function App() {
                   </p>
                 ) : (
                   <p className="text-xs text-slate-500 mt-0.5">
-                    Koneksikan ke Google Apps Script (GAS) Web App untuk sinkronisasi otomatis instan tanpa login manual.
+                    Gunakan integrasi server backend dengan Google Apps Script untuk sinkronisasi otomatis instan.
                   </p>
                 )}
               </div>
@@ -777,7 +725,7 @@ export default function App() {
                 className="flex items-center gap-1.5 bg-blue-600 text-white hover:bg-blue-700 px-3.5 py-1.5 rounded-lg text-xs font-bold cursor-pointer transition-colors"
               >
                 <Settings2 className="h-3.5 w-3.5" />
-                Konfigurasi GAS
+                Instruksi Apps Script
               </button>
 
               {token && !gasUrl && (
@@ -1034,8 +982,8 @@ export default function App() {
                   <Settings2 className="h-5 w-5" />
                 </div>
                 <div>
-                  <h3 className="text-base font-bold text-slate-800">Konfigurasi Database Spreadsheet (GAS)</h3>
-                  <p className="text-[11px] text-slate-500">Hubungkan database spreadsheet instan tanpa login berulang.</p>
+                  <h3 className="text-base font-bold text-slate-800">Petunjuk Sinkronisasi Google Sheets (GAS)</h3>
+                  <p className="text-[11px] text-slate-500">Integrasi spreadsheet otomatis langsung via server backend.</p>
                 </div>
               </div>
               <button 
@@ -1048,7 +996,7 @@ export default function App() {
 
             {/* Content (Scrollable) */}
             <div className="p-6 overflow-y-auto space-y-6 flex-1 text-xs text-slate-600">
-              {/* URL Input Form */}
+              {/* Status Banner */}
               {isBackendGas ? (
                 <div className="bg-emerald-50 border border-emerald-100 p-5 rounded-2xl space-y-2 text-emerald-800">
                   <div className="flex items-center gap-2">
@@ -1056,41 +1004,21 @@ export default function App() {
                     <strong className="text-xs font-bold uppercase tracking-wider">Koneksi Backend Aktif</strong>
                   </div>
                   <p className="text-xs leading-relaxed font-medium">
-                    Konfigurasi Google Apps Script (GAS) telah tertanam langsung pada server backend secara aman. Data Anda akan disinkronkan secara otomatis melalui rute backend tanpa memerlukan pengisian URL manual atau penyimpanan data sensitif di sisi browser Anda.
+                    Google Apps Script (GAS) telah dikonfigurasi secara aman di server backend (`GAS_URL`). Data akan otomatis disinkronkan langsung dari browser ke spreadsheet Anda melalui rute proxy backend yang aman.
                   </p>
-                  <div className="pt-2 text-slate-400 font-mono text-[11px]">
+                  <div className="pt-1 text-slate-400 font-mono text-[10px]">
                     Endpoint Proxy: <code className="bg-white/70 px-1 py-0.5 rounded border border-emerald-200 text-emerald-800">/api/gas</code>
                   </div>
                 </div>
               ) : (
-                <div className="bg-blue-50/50 border border-blue-100 p-5 rounded-2xl space-y-3">
-                  <label className="block text-xs font-bold text-slate-700">Google Apps Script Web App URL</label>
-                  <div className="flex gap-2">
-                    <input
-                      type="url"
-                      value={inputGasUrl}
-                      onChange={(e) => setInputGasUrl(e.target.value)}
-                      placeholder="https://script.google.com/macros/s/.../exec"
-                      className="flex-1 px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-mono focus:outline-hidden focus:border-blue-500"
-                    />
+                <div className="bg-amber-50 border border-amber-100 p-5 rounded-2xl space-y-2 text-amber-800">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+                    <strong className="text-xs font-bold uppercase tracking-wider">Koneksi Backend Belum Ditemukan</strong>
                   </div>
-                  <div className="flex gap-2 justify-end pt-2">
-                    {gasUrl && (
-                      <button
-                        onClick={handleDisconnectGas}
-                        className="px-4 py-2 rounded-xl text-rose-600 bg-rose-50 hover:bg-rose-100 font-bold transition-all cursor-pointer"
-                      >
-                        Putuskan Koneksi (Disconnect)
-                      </button>
-                    )}
-                    <button
-                      onClick={() => handleSaveGasConfig(inputGasUrl)}
-                      disabled={isSheetsLoading || !inputGasUrl}
-                      className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold transition-all disabled:opacity-50 cursor-pointer"
-                    >
-                      {isSheetsLoading ? 'Menghubungkan...' : 'Simpan & Tes Koneksi'}
-                    </button>
-                  </div>
+                  <p className="text-xs leading-relaxed font-medium">
+                    Variabel lingkungan <code className="bg-amber-100 px-1 py-0.5 rounded text-amber-900 font-mono">GAS_URL</code> belum diatur pada file <code className="bg-amber-100 px-1 py-0.5 rounded text-amber-900 font-mono">.env</code> server backend Anda. Atur variabel tersebut dengan Web App URL Google Apps Script Anda untuk mengaktifkan sinkronisasi otomatis.
+                  </p>
                 </div>
               )}
 
@@ -1098,7 +1026,7 @@ export default function App() {
               <div className="space-y-4">
                 <h4 className="font-bold text-slate-800 text-sm flex items-center gap-1.5">
                   <span className="w-1.5 h-4 bg-blue-600 rounded-full inline-block"></span>
-                  Langkah-Langkah Setup Google Apps Script (Hanya 2 Menit):
+                  Langkah-Langkah Pengaturan Google Apps Script:
                 </h4>
                 <ol className="list-decimal pl-5 space-y-2.5 text-slate-600">
                   <li>Buka Google Spreadsheet target Anda (Disarankan gunakan ID: <code className="bg-slate-100 px-1 py-0.5 rounded font-mono select-all text-[11px]">{SPREADSHEET_ID}</code>).</li>
@@ -1113,8 +1041,8 @@ export default function App() {
                       <li>*Siapa yang memiliki akses (Who has access):* **Siapa saja (Anyone)**</li>
                     </ul>
                   </li>
-                  <li>Klik **Terapkan** (Deploy), setujui otorisasi akun Google Anda jika diminta (klik Advanced &gt; Go to Untitled project &gt; Allow).</li>
-                  <li>Salin **URL Aplikasi Web** yang diberikan, lalu tempel pada input form di atas dan klik **Simpan & Tes Koneksi**!</li>
+                  <li>Klik **Terapkan** (Deploy) dan setujui otorisasi akun Google Anda jika diminta.</li>
+                  <li>Salin **URL Aplikasi Web** yang diberikan, lalu masukkan sebagai nilai <code className="bg-slate-100 px-1 py-0.5 rounded font-mono text-[11px]">GAS_URL</code> di file <code className="bg-slate-100 px-1 py-0.5 rounded font-mono text-[11px]">.env</code> server backend Anda.</li>
                 </ol>
               </div>
 
