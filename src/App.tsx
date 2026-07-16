@@ -5,6 +5,7 @@ import Dashboard from './components/Dashboard';
 import MaterialForm from './components/MaterialForm';
 import MaterialTable from './components/MaterialTable';
 import FileManagement from './components/FileManagement';
+import ReportPdfModal from './components/ReportPdfModal';
 import { 
   FileSpreadsheet, 
   LayoutDashboard, 
@@ -54,6 +55,7 @@ export default function App() {
   const [laporanTab, setLaporanTab] = useState<'table' | 'dashboard' | 'files'>('table');
   
   const [editingRecord, setEditingRecord] = useState<MaterialRecord | null>(null);
+  const [activePdfRecord, setActivePdfRecord] = useState<MaterialRecord | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // Login States
@@ -428,17 +430,26 @@ export default function App() {
 
   // Create or Update Record
   const handleSaveRecord = (recordData: Omit<MaterialRecord, 'no'>) => {
+    let savedRecord: MaterialRecord;
     if (editingRecord) {
-      const updatedList = records.map(r => r.id === recordData.id ? { ...r, ...recordData } : r);
+      savedRecord = {
+        ...recordData,
+        no: editingRecord.no
+      };
+      const updatedList = records.map(r => r.id === recordData.id ? savedRecord : r);
       saveRecordsToDB(updatedList);
       setEditingRecord(null);
     } else {
-      const newRecord: MaterialRecord = {
+      savedRecord = {
         ...recordData,
         no: records.length + 1
       };
-      saveRecordsToDB([...records, newRecord]);
+      saveRecordsToDB([...records, savedRecord]);
     }
+
+    // Set active pdf record to show the custom print report with PDF feature immediately!
+    setActivePdfRecord(savedRecord);
+
     // Automatically route to table view inside Laporan Material to inspect changes
     setCurrentView('laporan');
     setLaporanTab('table');
@@ -1087,6 +1098,7 @@ export default function App() {
                     onEdit={handleEditRecord} 
                     onDelete={handleDeleteRecord} 
                     materialsList={activeMaterialsList}
+                    onViewPdf={setActivePdfRecord}
                   />
                 )}
 
@@ -1119,6 +1131,14 @@ export default function App() {
           </span>
         </div>
       </footer>
+
+      {activePdfRecord && (
+        <ReportPdfModal 
+          record={activePdfRecord} 
+          onClose={() => setActivePdfRecord(null)} 
+          materialsList={activeMaterialsList}
+        />
+      )}
 
     </div>
   );

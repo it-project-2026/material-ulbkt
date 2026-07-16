@@ -1,15 +1,16 @@
 import React, { useState } from 'react';
 import { MaterialRecord, MATERIAL_LIST, MaterialUsage, MaterialItem } from '../types';
-import { Search, Edit, Trash2, Eye, Filter, X, ArrowLeftRight, ChevronLeft, ChevronRight, FileSpreadsheet } from 'lucide-react';
+import { Search, Edit, Trash2, Eye, Filter, X, ArrowLeftRight, ChevronLeft, ChevronRight, FileSpreadsheet, FileText } from 'lucide-react';
 
 interface MaterialTableProps {
   records: MaterialRecord[];
   onEdit: (record: MaterialRecord) => void;
   onDelete: (id: string) => void;
   materialsList?: MaterialItem[];
+  onViewPdf?: (record: MaterialRecord) => void;
 }
 
-export default function MaterialTable({ records, onEdit, onDelete, materialsList }: MaterialTableProps) {
+export default function MaterialTable({ records, onEdit, onDelete, materialsList, onViewPdf }: MaterialTableProps) {
   const activeMaterials = materialsList || MATERIAL_LIST;
 
   const [searchTerm, setSearchTerm] = useState('');
@@ -242,6 +243,13 @@ export default function MaterialTable({ records, onEdit, onDelete, materialsList
                           <Eye className="h-3.5 w-3.5" />
                         </button>
                         <button
+                          onClick={() => onViewPdf?.(rec)}
+                          className="p-1 text-amber-600 hover:bg-amber-50 rounded transition-colors cursor-pointer"
+                          title="Cetak Laporan / PDF"
+                        >
+                          <FileText className="h-3.5 w-3.5" />
+                        </button>
+                        <button
                           onClick={() => onEdit(rec)}
                           className="p-1 text-emerald-600 hover:bg-emerald-50 rounded transition-colors cursor-pointer"
                           title="Edit Laporan"
@@ -472,6 +480,16 @@ export default function MaterialTable({ records, onEdit, onDelete, materialsList
 
             {/* Modal Footer */}
             <div className="px-6 py-4 border-t border-slate-100 bg-slate-50 flex justify-end gap-2 rounded-b-2xl">
+              <button
+                onClick={() => {
+                  onViewPdf?.(selectedRecord);
+                  setSelectedRecord(null);
+                }}
+                className="text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200 hover:bg-amber-100 px-4 py-2 rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer"
+              >
+                <FileText className="h-3.5 w-3.5" />
+                Cetak / PDF
+              </button>
               <button
                 onClick={() => {
                   onEdit(selectedRecord);
