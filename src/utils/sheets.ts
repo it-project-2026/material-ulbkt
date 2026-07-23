@@ -137,7 +137,7 @@ export async function ensureAndInitializeSheets(accessToken: string): Promise<vo
     const sheets = meta.sheets || [];
     const existingTitles = sheets.map((s: any) => s.properties?.title);
 
-    const requiredSheets = [SHEET_NAME, 'ULP', 'POSKO', 'PETUGAS', 'MATERIAL', 'SHIFT'];
+    const requiredSheets = [SHEET_NAME, 'ULP', 'POSKO', 'PETUGAS', 'MATERIAL', 'SHIFT', 'terima-material'];
     const missingSheets = requiredSheets.filter(title => !existingTitles.includes(title));
 
     if (missingSheets.length > 0) {
@@ -650,6 +650,39 @@ export async function saveRecordsToSheets(records: MaterialRecord[], accessToken
 
   if (!writeRes.ok) {
     throw new Error(`HTTP ${writeRes.status}: Gagal menulis data ke Google Sheets.`);
+  }
+}
+
+/**
+ * Saves a single receive material record to Google Sheets
+ */
+export async function saveReceiveMaterialToSheets(record: any, accessToken: string): Promise<void> {
+  await ensureAndInitializeSheets(accessToken);
+
+  const sheetName = 'terima-material';
+  const row = [record.timestamp, record.ulp, record.pegawaiPenyerah, record.petugasPenerima, JSON.stringify(record.materials), record.fotoTandaTerima];
+
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${encodeURIComponent(sheetName + '!A1')}:append?valueInputOption=USER_ENTERED`;
+  
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ values: [row] })
+    });
+
+    handleHttpStatus(res.status);
+
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => ({}));
+      throw new Error(`HTTP ${res.status}: ${errorData.error?.message || 'Gagal menyimpan data ke sheet terima-material.'}`);
+    }
+  } catch (err: any) {
+    console.error('Save to sheets error:', err);
+    throw new Error(err.message || 'Gagal menyimpan data.');
   }
 }
 

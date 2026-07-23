@@ -53,6 +53,16 @@ export interface MaterialUsage {
   lokasi: string;
 }
 
+export interface ReceiveMaterialRecord {
+  id: string;
+  timestamp: string; // Formatting: YYYY-MM-DD HH:mm
+  ulp: string;
+  pegawaiPenyerah: string;
+  petugasPenerima: string;
+  materials: Record<string, number>; // Key is material.id, value is qty
+  fotoTandaTerima: string; // Base64 data URL
+}
+
 export interface MaterialRecord {
   id: string;
   no: number; // Auto increment or row number

@@ -3,6 +3,7 @@ import { MaterialRecord, MATERIAL_LIST, MaterialItem } from './types';
 import { INITIAL_MOCK_RECORDS } from './data/mockData';
 import Dashboard from './components/Dashboard';
 import MaterialForm from './components/MaterialForm';
+import ReceiveMaterialForm from './components/ReceiveMaterialForm';
 import MaterialTable from './components/MaterialTable';
 import FileManagement from './components/FileManagement';
 import ReportPdfModal from './components/ReportPdfModal';
@@ -34,6 +35,7 @@ import {
   logout, 
   fetchRecordsFromSheets, 
   saveRecordsToSheets,
+  saveReceiveMaterialToSheets,
   fetchAllReferenceOptions,
   SheetsReferenceOptions,
   SPREADSHEET_ID,
@@ -49,8 +51,8 @@ import { SPREADSHEET_WEB_APP_URL } from './utils/constants';
 export default function App() {
   const [records, setRecords] = useState<MaterialRecord[]>([]);
   
-  // Navigation states: 'menu' | 'form' | 'laporan'
-  const [currentView, setCurrentView] = useState<'menu' | 'form' | 'laporan'>('menu');
+  // Navigation states: 'menu' | 'form' | 'laporan' | 'terima-material'
+  const [currentView, setCurrentView] = useState<'menu' | 'form' | 'laporan' | 'terima-material'>('menu');
   // Laporan sub-tabs: 'table' | 'dashboard' | 'files'
   const [laporanTab, setLaporanTab] = useState<'table' | 'dashboard' | 'files'>('table');
   
@@ -981,6 +983,30 @@ export default function App() {
                       </div>
                     </button>
 
+                    {/* Card: TERIMA MATERIAL DARI PLN */}
+                    <button
+                      onClick={() => setCurrentView('terima-material')}
+                      className="group bg-white border border-slate-200 hover:border-blue-400 p-8 rounded-3xl text-left shadow-xs hover:shadow-md transition-all duration-300 relative overflow-hidden flex flex-col justify-between h-64 cursor-pointer"
+                    >
+                      <div className="space-y-4">
+                        <div className="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                          <ArrowDown className="h-6 w-6" />
+                        </div>
+                        <div className="space-y-1.5">
+                          <h4 className="text-lg font-bold text-slate-800 font-display flex items-center gap-2">
+                            TERIMA MATERIAL DARI PLN
+                            <ChevronRight className="h-4 w-4 text-slate-400 group-hover:translate-x-1.5 transition-transform" />
+                          </h4>
+                          <p className="text-xs text-slate-500 leading-relaxed">
+                            Formulir penerimaan material baru dari gudang PLN ke gudang posko.
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-[10px] text-emerald-700 font-bold tracking-wider uppercase bg-emerald-50/50 self-start px-3 py-1 rounded-full">
+                        Update Stok Gudang
+                      </div>
+                    </button>
+
                     {/* Card 2: LAPORAN MATERIAL */}
                     <button
                       onClick={() => {
@@ -1049,6 +1075,29 @@ export default function App() {
                 </div>
 
               </div>
+            )}
+            
+            {/* VIEW: TERIMA MATERIAL */}
+            {currentView === 'terima-material' && (
+              <ReceiveMaterialForm 
+                onBack={() => setCurrentView('menu')}
+                ulpOptions={activeUlpList}
+                onSave={(data) => {
+                  if (token) {
+                    setIsSheetsLoading(true);
+                    saveReceiveMaterialToSheets(data, token)
+                      .then(() => {
+                        setSheetsSuccessMessage('Berhasil menyimpan data terima material!');
+                        setCurrentView('menu');
+                        setTimeout(() => setSheetsSuccessMessage(null), 4000);
+                      })
+                      .catch(err => setSheetsError(err.message))
+                      .finally(() => setIsSheetsLoading(false));
+                  } else {
+                    setSheetsError('Tidak ada koneksi Google Sheets.');
+                  }
+                }}
+              />
             )}
 
             {/* VIEW 2: INPUT FORM */}
